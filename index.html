@@ -111,7 +111,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.04-2156';
+const APP_VERSION = '2026.10.04-2157';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -342,7 +342,7 @@ function bindLogin(){
     state.busy=false;
     if(r.error){
       const m=r.error.message||'';
-      state.err = /non membre/i.test(m) ? 'Cette adresse ne fait pas partie du foyer.'
+      state.err = /non membre|Database error saving new user/i.test(m) ? 'Cette adresse ne fait pas partie du foyer. Demandez à un membre de l\'ajouter dans Réglages.'
         : /Invalid login/i.test(m) ? 'Email ou mot de passe incorrect.'
         : /already registered/i.test(m) ? 'Un compte existe déjà pour cet email : connectez-vous.'
         : /at least|Password should/i.test(m) ? 'Mot de passe trop court (8 caractères minimum).'
