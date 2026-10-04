@@ -111,7 +111,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.04-2024';
+const APP_VERSION = '2026.10.04-2156';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -128,7 +128,7 @@ const state = {
   session:null, member:null, tab: localStorage_get('tab') || 'menu',
   weeks:[], weekIdx:0, meals:[], items:[], backlog:[], household:[], members:[],
   filter: localStorage_get('filter') || 'drive', hideDone: localStorage_get('hideDone') === '1',
-  email: localStorage_get('email') || '', codeSent:false, err:'', busy:false
+  email: localStorage_get('email') || '', mode:'login', err:'', busy:false
 };
 function localStorage_get(k){ try{ return localStorage.getItem('ar_'+k); }catch{ return null; } }
 function localStorage_set(k,v){ try{ localStorage.setItem('ar_'+k, v); }catch{} }
@@ -175,23 +175,19 @@ function render(){
 function tabBtn(id,icon,label){ return `<button data-tab="${id}" class="${state.tab===id?'on':''}"><span class="i">${icon}</span>${label}</button>`; }
 
 function renderLogin(){
+  const signup = state.mode==='signup';
   return `<div class="login">
     <img class="logo" src="icon-192.png" alt="">
     <h1>Aide repas</h1>
     <p class="sub">Menu de la semaine et courses du foyer.</p>
     <div class="card">
-      ${!state.codeSent ? `
-        <label class="l" for="email">Votre email</label>
-        <input id="email" type="email" inputmode="email" autocomplete="email" value="${esc(state.email)}" placeholder="prenom@exemple.fr">
-        <p class="hint">Un code à 6 chiffres vous sera envoyé par email. Pas de mot de passe.</p>
-        <button class="primary" id="sendcode" style="width:100%" ${state.busy?'disabled':''}>Recevoir un code</button>
-      ` : `
-        <p class="small">Code envoyé à <b>${esc(state.email)}</b>.</p>
-        <label class="l" for="code">Code reçu</label>
-        <input id="code" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="••••••">
-        <button class="primary" id="verify" style="width:100%;margin-top:10px" ${state.busy?'disabled':''}>Se connecter</button>
-        <button class="ghost" id="back" style="width:100%;margin-top:4px">Changer d'email</button>
-      `}
+      <label class="l" for="email">Email</label>
+      <input id="email" type="email" inputmode="email" autocomplete="username" value="${esc(state.email)}" placeholder="prenom@exemple.fr">
+      <label class="l" for="pwd">Mot de passe${signup?' (8 caractères minimum)':''}</label>
+      <input id="pwd" type="password" autocomplete="${signup?'new-password':'current-password'}" placeholder="••••••••">
+      ${signup?`<p class="hint">Seules les adresses du foyer peuvent créer un compte.</p>`:''}
+      <button class="primary" id="submit" style="width:100%;margin-top:10px" ${state.busy?'disabled':''}>${signup?'Créer mon compte':'Se connecter'}</button>
+      <button class="ghost" id="switch" style="width:100%;margin-top:4px">${signup?'J\'ai déjà un compte':'Première connexion ? Créer mon compte'}</button>
       ${state.err?`<div class="err">${esc(state.err)}</div>`:''}
     </div>
   </div>`;
@@ -338,22 +334,27 @@ function openAddSheet(){
 
 // ---------- Liaisons ----------
 function bindLogin(){
-  const send=$('#sendcode'); if(send) send.onclick=async()=>{
-    const email=$('#email').value.trim().toLowerCase(); if(!email){ state.err='Email requis'; render(); return; }
+  const go=async()=>{
+    const email=$('#email').value.trim().toLowerCase(); const password=$('#pwd').value;
+    if(!email||!password){ state.err='Email et mot de passe requis'; render(); return; }
     state.email=email; localStorage_set('email',email); state.busy=true; state.err=''; render();
-    const {error}=await sb.auth.signInWithOtp({email, options:{shouldCreateUser:true}});
-    state.busy=false; if(error){ state.err=error.message; } else { state.codeSent=true; }
-    render();
+    const r = state.mode==='signup' ? await sb.auth.signUp({email,password}) : await sb.auth.signInWithPassword({email,password});
+    state.busy=false;
+    if(r.error){
+      const m=r.error.message||'';
+      state.err = /non membre/i.test(m) ? 'Cette adresse ne fait pas partie du foyer.'
+        : /Invalid login/i.test(m) ? 'Email ou mot de passe incorrect.'
+        : /already registered/i.test(m) ? 'Un compte existe déjà pour cet email : connectez-vous.'
+        : /at least|Password should/i.test(m) ? 'Mot de passe trop court (8 caractères minimum).'
+        : m;
+      render();
+    }
   };
-  const v=$('#verify'); if(v) v.onclick=async()=>{
-    const token=$('#code').value.trim(); if(!token) return;
-    state.busy=true; state.err=''; render();
-    const {error}=await sb.auth.verifyOtp({email:state.email, token, type:'email'});
-    state.busy=false; if(error){ state.err='Code invalide ou expiré.'; render(); }
-  };
-  const c=$('#code'); if(c){ c.focus(); c.onkeydown=e=>{ if(e.key==='Enter') $('#verify').click(); }; }
-  const e=$('#email'); if(e){ e.onkeydown=ev=>{ if(ev.key==='Enter') $('#sendcode').click(); }; }
-  const b=$('#back'); if(b) b.onclick=()=>{ state.codeSent=false; state.err=''; render(); };
+  $('#submit').onclick=go;
+  $('#pwd').onkeydown=e=>{ if(e.key==='Enter') go(); };
+  $('#email').onkeydown=e=>{ if(e.key==='Enter') $('#pwd').focus(); };
+  $('#switch').onclick=()=>{ state.mode = state.mode==='signup'?'login':'signup'; state.err=''; render(); };
+  if(!state.email) $('#email').focus(); else $('#pwd').focus();
 }
 function bindNotMember(){ $('#logout').onclick=()=>sb.auth.signOut(); }
 function bindMain(){
