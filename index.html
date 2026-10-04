@@ -111,7 +111,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.04-2157';
+const APP_VERSION = '2026.10.04-2205';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -120,7 +120,19 @@ const CATS = {
   hygiene:'Hygiène', maison:'Maison & entretien', enfants:'Enfants', autre:'Autre'
 };
 const CAT_ORDER = Object.keys(CATS);
-const KIND = { recette:'Recette', assemblage:'Simple', commande:'Commandé', restes:'Restes', exterieur:'Extérieur', libre:'Libre' };
+// ----- Le foyer : à ajuster ici pour personnaliser les textes -----
+const FOYER = {
+  nom: 'les Levesque',            // affiché sur l'écran d'accueil
+  papa: 'Kevin',
+  maman: '',                      // prénom de la compagne (à compléter)
+  enfants: [],                    // prénoms des enfants (à compléter), ex. ['Léa','Tom']
+  magasin: 'Grand Frais',         // le magasin pour les fruits et légumes
+};
+const KIND = { recette:'Recette', assemblage:'Vite fait', commande:'On commande', restes:'Restes', exterieur:'On mange dehors', libre:'Libre' };
+function prenom(email){ const m=state.members.find(x=>x.email.toLowerCase()===String(email||'').toLowerCase()); return m?.display_name || (email==='claude'?'Claude':String(email||'').split('@')[0]); }
+function moi(){ return state.member?.display_name || prenom(state.session?.user?.email); }
+function salut(){ const h=new Date().getHours(); return h<5?'Bonne nuit':h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir'; }
+function lesEnfants(){ const e=FOYER.enfants; return e.length===0?'les enfants':e.length===1?e[0]:e.slice(0,-1).join(', ')+' et '+e[e.length-1]; }
 const DAYS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 const MONTHS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
 
@@ -178,24 +190,24 @@ function renderLogin(){
   const signup = state.mode==='signup';
   return `<div class="login">
     <img class="logo" src="icon-192.png" alt="">
-    <h1>Aide repas</h1>
-    <p class="sub">Menu de la semaine et courses du foyer.</p>
+    <h1>Chez ${esc(FOYER.nom)}</h1>
+    <p class="sub">Qu'est-ce qu'on mange cette semaine, et qu'est-ce qu'il reste à acheter.</p>
     <div class="card">
       <label class="l" for="email">Email</label>
       <input id="email" type="email" inputmode="email" autocomplete="username" value="${esc(state.email)}" placeholder="prenom@exemple.fr">
       <label class="l" for="pwd">Mot de passe${signup?' (8 caractères minimum)':''}</label>
       <input id="pwd" type="password" autocomplete="${signup?'new-password':'current-password'}" placeholder="••••••••">
-      ${signup?`<p class="hint">Seules les adresses du foyer peuvent créer un compte.</p>`:''}
-      <button class="primary" id="submit" style="width:100%;margin-top:10px" ${state.busy?'disabled':''}>${signup?'Créer mon compte':'Se connecter'}</button>
-      <button class="ghost" id="switch" style="width:100%;margin-top:4px">${signup?'J\'ai déjà un compte':'Première connexion ? Créer mon compte'}</button>
+      ${signup?`<p class="hint">Réservé à la famille : ton email doit déjà être dans la liste du foyer.</p>`:''}
+      <button class="primary" id="submit" style="width:100%;margin-top:10px" ${state.busy?'disabled':''}>${signup?'Créer mon compte':'C\'est parti'}</button>
+      <button class="ghost" id="switch" style="width:100%;margin-top:4px">${signup?'J\'ai déjà un compte':'Première fois ici ? Crée ton compte'}</button>
       ${state.err?`<div class="err">${esc(state.err)}</div>`:''}
     </div>
   </div>`;
 }
 function renderNotMember(){
-  return `<div class="login"><h1>Accès réservé</h1>
-    <div class="card"><p>L'adresse <b>${esc(state.session.user.email)}</b> ne fait pas partie du foyer.</p>
-    <p class="hint">Demandez à un membre de l'ajouter dans Réglages.</p>
+  return `<div class="login"><h1>Oups, c'est privé</h1>
+    <div class="card"><p>L'adresse <b>${esc(state.session.user.email)}</b> n'est pas dans la liste du foyer.</p>
+    <p class="hint">Demande à ${esc(FOYER.papa||'un membre')} de l'ajouter dans Réglages, puis reconnecte-toi.</p>
     <button id="logout" style="width:100%">Se déconnecter</button></div></div>`;
 }
 
@@ -214,8 +226,8 @@ function renderWeekSwitch(){
 
 function renderMenu(){
   const w=curWeek();
-  let html=`<header class="top"><h1>Menu</h1><span class="sub">${esc(state.member?.display_name||'')}</span></header><main>`;
-  if(!w){ return html+`<div class="empty">Pas encore de menu.<br><span class="small">Lancez la planification depuis Claude Code sur le Mac.</span></div></main>`; }
+  let html=`<header class="top"><h1>${salut()} ${esc(moi())}</h1><span class="sub">au menu</span></header><main>`;
+  if(!w){ return html+`<div class="empty">Rien au menu pour l'instant.<br><span class="small">Dès que ${esc(FOYER.papa)} aura fait la semaine avec Claude sur le Mac, ça apparaît ici.</span></div></main>`; }
   html+=renderWeekSwitch();
   const ctx=w.context||{}; const planning=ctx.planning||{}; const events=ctx.events||[];
   if(ctx.meteo) html+=`<div class="small" style="margin:-4px 0 10px">☀️ ${esc(ctx.meteo)}</div>`;
@@ -227,9 +239,9 @@ function renderMenu(){
     const evs=events.filter(e=>e.day===day);
     const pl=planning[key];
     html+=`<div class="card day" ${day===today?'style="border-color:var(--accent)"':''}>
-      <h3>${DAYS[i]} <span class="d">${fmtDate(day)}</span>${pl?`<span class="planning">· ${esc(pl)}</span>`:''}</h3>
+      <h3>${DAYS[i]} <span class="d">${fmtDate(day)}</span>${pl?`<span class="planning">· ${esc(FOYER.maman?FOYER.maman+' '+(['matin','soir'].includes(pl)?'du '+pl:pl):pl)}</span>`:''}</h3>
       ${evs.map(e=>`<p class="ev">★ ${esc(e.label)}</p>`).join('')}
-      ${!ms.length?`<div class="meal"><div class="slot">—</div><div class="grow small">Rien de prévu</div></div>`:''}
+      ${!ms.length?`<div class="meal"><div class="slot">—</div><div class="grow small">Rien de prévu, on improvise</div></div>`:''}
       ${['midi','soir'].map(slot=>{
         const m=ms.find(x=>x.slot===slot);
         if(!m) return '';
@@ -248,16 +260,16 @@ function renderMenu(){
 function renderCourses(){
   const w=curWeek();
   let html=`<header class="top"><h1>Courses</h1>
-    <button class="ghost" id="toggleDone">${state.hideDone?'Voir cochés':'Masquer cochés'}</button></header><main>`;
-  if(!w){ return html+`<div class="empty">Pas de liste de courses.</div></main>`; }
+    <button class="ghost" id="toggleDone">${state.hideDone?'Voir ce qui est pris':'Cacher ce qui est pris'}</button></header><main>`;
+  if(!w){ return html+`<div class="empty">Pas de liste de courses pour l'instant.</div></main>`; }
   html+=renderWeekSwitch();
-  html+=`<div class="seg">${['drive','magasin','tout'].map(f=>`<button data-filter="${f}" class="${state.filter===f?'on':''}">${{drive:'Drive',magasin:'Magasin',tout:'Tout'}[f]}</button>`).join('')}</div>`;
+  html+=`<div class="seg">${['drive','magasin','tout'].map(f=>`<button data-filter="${f}" class="${state.filter===f?'on':''}">${{drive:'Drive',magasin:FOYER.magasin,tout:'Tout'}[f]}</button>`).join('')}</div>`;
   let items=state.items.filter(i=>i.status!=='annule');
   if(state.filter!=='tout') items=items.filter(i=>i.channel===state.filter);
   const remaining=items.filter(i=>i.status==='a_acheter').length;
-  html+=`<div class="counter">${remaining} article${remaining>1?'s':''} restant${remaining>1?'s':''} sur ${items.length}</div>`;
+  html+=`<div class="counter">${remaining===0&&items.length?'Tout est pris, bravo !':remaining===1?'Plus qu\'un article à prendre':`Encore ${remaining} articles à prendre`}${items.length&&remaining?` (sur ${items.length})`:''}</div>`;
   if(state.hideDone) items=items.filter(i=>i.status!=='achete');
-  if(!items.length) html+=`<div class="empty">Rien à acheter ici.</div>`;
+  if(!items.length) html+=`<div class="empty">Rien à prendre ${state.filter==='magasin'?'chez '+esc(FOYER.magasin):state.filter==='drive'?'au drive':''} cette semaine.</div>`;
   const groups={};
   for(const it of items){ (groups[it.category||'autre'] ||= []).push(it); }
   for(const c of CAT_ORDER){ if(!groups[c]) continue;
@@ -269,54 +281,54 @@ function renderItem(it){
   return `<div class="item ${it.status==='achete'?'done':''}" data-item="${it.id}">
     <div class="cb">${it.status==='achete'?'✓':''}</div>
     <div class="grow"><div class="lab">${esc(it.label)}</div>
-      <div class="q">${[it.qty, state.filter==='tout'?(it.channel==='drive'?'Drive':'Magasin'):null, it.source==='manque'?'ajouté en semaine':null].filter(Boolean).map(esc).join(' · ')}</div></div>
+      <div class="q">${[it.qty, state.filter==='tout'?(it.channel==='drive'?'Drive':'Magasin'):null, it.source==='manque'?'ajouté par '+esc(prenom(it.added_by)):null].filter(Boolean).map(esc).join(' · ')}</div></div>
     ${it.channel==='drive'?'':'<span class="badge">🏪</span>'}
     <button class="del" data-del="${it.id}" aria-label="Supprimer">×</button>
   </div>`;
 }
 
 function renderManque(){
-  let html=`<header class="top"><h1>Il manque…</h1></header><main>
+  let html=`<header class="top"><h1>Il manque…</h1><span class="sub">pour la prochaine fois</span></header><main>
     <div class="card">
-      <p class="small" style="margin:0 0 8px">Un article à racheter ? Notez-le ici, il sera repris dans la prochaine liste de courses.</p>
+      <p class="small" style="margin:0 0 8px">Plus de beurre, plus d'éponges ? Note-le ici et Claude le remet dans la prochaine liste de courses.</p>
       <div class="row"><input id="mq" class="grow" placeholder="ex. éponges, beurre, sacs poubelle" autocomplete="off"><button class="primary" id="mqadd">OK</button></div>
     </div>`;
   if(state.household.length){
-    html+=`<div class="cat">Récurrents (touchez pour ajouter)</div><div class="chips">`+
+    html+=`<div class="cat">Les classiques de la maison</div><div class="chips">`+
       state.household.map(h=>{ const on=state.backlog.some(b=>b.label.toLowerCase()===h.label.toLowerCase());
         return `<button data-hh="${esc(h.label)}" class="${on?'on':''}">${esc(h.label)}</button>`; }).join('')+`</div>`;
   }
-  html+=`<div class="cat">À prévoir (${state.backlog.length})</div>`;
-  if(!state.backlog.length) html+=`<div class="card small">Rien en attente.</div>`;
+  html+=`<div class="cat">Déjà noté pour la prochaine liste (${state.backlog.length})</div>`;
+  if(!state.backlog.length) html+=`<div class="card small">Rien pour l'instant, la maison est bien fournie.</div>`;
   else html+=`<div class="card" style="padding:2px 14px">`+state.backlog.map(it=>`<div class="item">
-      <div class="grow"><div class="lab">${esc(it.label)}</div><div class="q">${[it.qty, CATS[it.category]||'', it.added_by?it.added_by.split('@')[0]:''].filter(Boolean).map(esc).join(' · ')}</div></div>
+      <div class="grow"><div class="lab">${esc(it.label)}</div><div class="q">${[it.qty, CATS[it.category]||'', it.added_by?'noté par '+prenom(it.added_by):''].filter(Boolean).map(esc).join(' · ')}</div></div>
       <button class="del" data-del="${it.id}" aria-label="Supprimer">×</button></div>`).join('')+`</div>`;
   return html+'</main>';
 }
 
 function renderReglages(){
   return `<header class="top"><h1>Réglages</h1></header><main>
-    <div class="card"><div class="cat" style="margin-top:0">Membres du foyer</div>
-      ${state.members.map(m=>`<div class="item"><div class="grow"><div class="lab">${esc(m.display_name||m.email)}</div><div class="q">${esc(m.email)}</div></div></div>`).join('')}
-      <label class="l" for="newmail">Ajouter un membre (email)</label>
-      <div class="row"><input id="newmail" type="email" inputmode="email" class="grow" placeholder="email"><button class="primary" id="addmember">Ajouter</button></div>
+    <div class="card"><div class="cat" style="margin-top:0">Qui est dans le foyer</div>
+      ${state.members.map(m=>`<div class="item"><div class="grow"><div class="lab">${esc(m.display_name||m.email.split('@')[0])}</div><div class="q">${esc(m.email)}</div></div></div>`).join('')}
+      <label class="l" for="newmail">Ajouter quelqu'un (son email)</label>
+      <div class="row"><input id="newname" class="grow" placeholder="Prénom" style="max-width:38%"><input id="newmail" type="email" inputmode="email" class="grow" placeholder="email"><button class="primary" id="addmember">Ajouter</button></div>
     </div>
     <div class="card"><div class="cat" style="margin-top:0">Compte</div>
-      <p class="small">Connecté en tant que ${esc(state.session.user.email)}</p>
+      <p class="small">Tu es connecté${FOYER.maman&&moi()===FOYER.maman?'e':''} en tant que ${esc(moi())} (${esc(state.session.user.email)})</p>
       <button id="logout" style="width:100%">Se déconnecter</button></div>
-    <p class="small" style="text-align:center">Aide repas · version ${APP_VERSION}</p>
+    <p class="small" style="text-align:center">Chez ${esc(FOYER.nom)} · version ${APP_VERSION}</p>
   </main>`;
 }
 
 // ---------- Feuille d'ajout (courses) ----------
 function openAddSheet(){
   const sheet=$('#sheet'); const bg=$('#sheetbg');
-  sheet.innerHTML=`<h2>Ajouter un article</h2>
-    <input id="al" placeholder="Article" autocomplete="off">
+  sheet.innerHTML=`<h2>On ajoute quoi ?</h2>
+    <input id="al" placeholder="ex. yaourts, pain de mie…" autocomplete="off">
     <div class="row" style="margin-top:8px"><input id="aq" class="grow" placeholder="Quantité (optionnel)">
       <select id="ac" style="width:48%">${CAT_ORDER.map(c=>`<option value="${c}">${CATS[c]}</option>`).join('')}</select></div>
-    <div class="chips" id="ach"><button data-ch="drive" class="on">Drive</button><button data-ch="magasin">Magasin</button></div>
-    <div class="row"><button id="acancel" class="grow">Annuler</button><button id="aok" class="primary grow">Ajouter</button></div>`;
+    <div class="chips" id="ach"><button data-ch="drive" class="on">Drive</button><button data-ch="magasin">${esc(FOYER.magasin)}</button></div>
+    <div class="row"><button id="acancel" class="grow">Laisse tomber</button><button id="aok" class="primary grow">Ajouter</button></div>`;
   let ch='drive';
   sheet.querySelector('#ach').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; ch=b.dataset.ch; sheet.querySelectorAll('#ach button').forEach(x=>x.classList.toggle('on',x===b)); };
   sheet.querySelector('#al').oninput=e=>{ sheet.querySelector('#ac').value=guessCat(e.target.value); };
@@ -327,7 +339,7 @@ function openAddSheet(){
     const w=curWeek();
     const {error}=await sb.from('shopping_items').insert({week_id:w.id,label,qty:sheet.querySelector('#aq').value.trim()||null,category:sheet.querySelector('#ac').value,channel:ch,source:'maison',added_by:state.session.user.email});
     if(error){ toast('Erreur : '+error.message); return; }
-    close(); toast('Ajouté'); await loadWeekData();
+    close(); toast('C\'est noté'); await loadWeekData();
   };
   sheet.classList.add('on'); bg.classList.add('on'); setTimeout(()=>sheet.querySelector('#al').focus(),250);
 }
@@ -336,15 +348,15 @@ function openAddSheet(){
 function bindLogin(){
   const go=async()=>{
     const email=$('#email').value.trim().toLowerCase(); const password=$('#pwd').value;
-    if(!email||!password){ state.err='Email et mot de passe requis'; render(); return; }
+    if(!email||!password){ state.err='Il manque ton email ou ton mot de passe.'; render(); return; }
     state.email=email; localStorage_set('email',email); state.busy=true; state.err=''; render();
     const r = state.mode==='signup' ? await sb.auth.signUp({email,password}) : await sb.auth.signInWithPassword({email,password});
     state.busy=false;
     if(r.error){
       const m=r.error.message||'';
-      state.err = /non membre|Database error saving new user/i.test(m) ? 'Cette adresse ne fait pas partie du foyer. Demandez à un membre de l\'ajouter dans Réglages.'
-        : /Invalid login/i.test(m) ? 'Email ou mot de passe incorrect.'
-        : /already registered/i.test(m) ? 'Un compte existe déjà pour cet email : connectez-vous.'
+      state.err = /non membre|Database error saving new user/i.test(m) ? 'Cette adresse n\'est pas dans la liste du foyer. Demande à ' + (FOYER.papa||'un membre') + ' de l\'ajouter dans Réglages.'
+        : /Invalid login/i.test(m) ? 'Mauvais email ou mot de passe, réessaie.'
+        : /already registered/i.test(m) ? 'Tu as déjà un compte avec cet email : connecte-toi.'
         : /at least|Password should/i.test(m) ? 'Mot de passe trop court (8 caractères minimum).'
         : m;
       render();
@@ -372,7 +384,7 @@ function bindMain(){
   });
   document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async(e)=>{
     e.stopPropagation();
-    if(!confirm('Supprimer cet article ?')) return;
+    if(!confirm('On l\'enlève de la liste ?')) return;
     const {error}=await sb.from('shopping_items').delete().eq('id',b.dataset.del);
     if(error) toast('Erreur : '+error.message); await loadWeekData();
   });
@@ -383,21 +395,21 @@ function bindMain(){
   }
   document.querySelectorAll('[data-hh]').forEach(b=>b.onclick=async()=>{
     const label=b.dataset.hh; const ex=state.backlog.find(x=>x.label.toLowerCase()===label.toLowerCase());
-    if(ex){ await sb.from('shopping_items').delete().eq('id',ex.id); toast('Retiré'); }
+    if(ex){ await sb.from('shopping_items').delete().eq('id',ex.id); toast('Enlevé'); }
     else { const h=state.household.find(x=>x.label===label); await addBacklog(label, h); }
   });
   const lo=$('#logout'); if(lo) lo.onclick=()=>sb.auth.signOut();
   const am=$('#addmember'); if(am) am.onclick=async()=>{
     const email=$('#newmail').value.trim().toLowerCase(); if(!email) return;
-    const {error}=await sb.from('members').insert({email});
+    const display_name=$('#newname').value.trim()||null; const {error}=await sb.from('members').insert({email, display_name});
     if(error){ toast('Erreur : '+error.message); return; }
-    toast('Membre ajouté'); await loadStatic(); render();
+    toast('Bienvenue dans le foyer !'); await loadStatic(); render();
   };
 }
 async function addBacklog(label, h){
   const {error}=await sb.from('shopping_items').insert({week_id:null,label,qty:h?.default_qty||null,category:h?.category||guessCat(label),channel:h?.channel||'drive',source:h?'maison':'manque',added_by:state.session.user.email});
   if(error){ toast('Erreur : '+error.message); return; }
-  toast('Noté pour la prochaine liste'); await loadWeekData();
+  toast('C\'est noté pour la prochaine liste'); await loadWeekData();
 }
 
 // ---------- Données ----------
