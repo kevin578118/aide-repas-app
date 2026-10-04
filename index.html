@@ -111,7 +111,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.04-2205';
+const APP_VERSION = '2026.10.04-2207';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -124,8 +124,8 @@ const CAT_ORDER = Object.keys(CATS);
 const FOYER = {
   nom: 'les Levesque',            // affiché sur l'écran d'accueil
   papa: 'Kevin',
-  maman: '',                      // prénom de la compagne (à compléter)
-  enfants: [],                    // prénoms des enfants (à compléter), ex. ['Léa','Tom']
+  maman: 'Audrey',
+  enfants: ['Cassandre','Achille'],
   magasin: 'Grand Frais',         // le magasin pour les fruits et légumes
 };
 const KIND = { recette:'Recette', assemblage:'Vite fait', commande:'On commande', restes:'Restes', exterieur:'On mange dehors', libre:'Libre' };
