@@ -120,6 +120,8 @@ textarea{min-height:84px;resize:vertical}
 .recap dd{margin:2px 0 0;font-size:15px}
 .banner{background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:14px;display:flex;align-items:center;gap:10px}
 .banner b{display:block}
+button.banner{width:100%;text-align:left;border:0;cursor:pointer;font:inherit;display:flex;align-items:center;min-height:0}
+.banner .ic{font-size:22px;flex:none}
 .small{font-size:13px;color:var(--muted)}
 </style>
 </head>
@@ -131,7 +133,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.05-1259';
+const APP_VERSION = '2026.10.05-1300';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -249,8 +251,8 @@ function renderWeekSwitch(){
 function renderMenu(){
   const w=curWeek();
   let html=`<header class="top"><h1>${salut()} ${esc(moi())}</h1><span class="sub">au menu</span></header><main>`;
-  if(state.draft){ html+=`<div class="banner" id="draftbanner">📝<span><b>Semaine du ${fmtDate(state.draft.week_start)} préparée</b>En attente du menu de Claude. Touchez pour modifier.</span></div>`; }
-  else { html+=`<button class="banner" id="prep" style="width:100%;text-align:left;border:0;cursor:pointer">📝<span><b>Préparer la semaine prochaine</b>2 minutes de questions, puis Claude fait le menu.</span></button>`; }
+  if(state.draft){ html+=`<button class="banner" id="draftbanner"><span class="ic">📝</span><span><b>Semaine du ${fmtDate(state.draft.week_start)} préparée</b>En attente du menu de Claude. Touchez pour modifier.</span></button>`; }
+  else { html+=`<button class="banner" id="prep"><span class="ic">📝</span><span><b>Préparer la semaine qui vient</b>2 minutes de questions, puis Claude fait le menu.</span></button>`; }
   if(!w){ return html+`<div class="empty">Rien au menu pour l'instant.<br><span class="small">Préparez la semaine ici, puis ${esc(FOYER.papa)} lance Claude sur le Mac et le menu apparaît.</span></div></main>`; }
   html+=renderWeekSwitch();
   const ctx=w.context||{}; const planning=ctx.planning||{}; const events=ctx.events||[];
