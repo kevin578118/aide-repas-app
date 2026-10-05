@@ -256,7 +256,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.05-1959';
+const APP_VERSION = '2026.10.05-2029';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -889,12 +889,14 @@ const DAYN={lun:'Lundi',mar:'Mardi',mer:'Mercredi',jeu:'Jeudi',ven:'Vendredi',sa
 function nextMonday(){ const d=new Date(); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()+(dow<=1?-dow:7-dow)); return toIso(d); }
 const QUI=[['kevin',FOYER.papa],['audrey',FOYER.maman],['cassandre',FOYER.enfants[0]||'Enfant 1'],['achille',FOYER.enfants[1]||'Enfant 2']];
 const QUI_NOM=Object.fromEntries(QUI);
-// Qui mange par défaut : Kevin jamais le midi, toujours le soir. Audrey du matin → soir seulement ; du soir → midi seulement ;
-// repos → les deux. Enfants : cantine lun/mar/jeu/ven, à la maison mer/sam/dim le midi, toujours le soir.
+// Qui mange par défaut : Kevin jamais le midi en semaine, toujours le soir, midi et soir le week-end.
+// Audrey du matin → soir seulement ; du soir → midi seulement ; repos → les deux.
+// Enfants : cantine lun/mar/jeu/ven ; mercredi midi à la maison seulement si Audrey est de repos ; sam/dim midi à la maison ; toujours le soir.
 function defautsQui(k, audrey){
-  const midi=[], soir=['kevin'];
+  const we=(k==='sam'||k==='dim');
+  const midi=we?['kevin']:[], soir=['kevin'];
   if(audrey==='matin') soir.push('audrey'); else if(audrey==='soir') midi.push('audrey'); else if(audrey==='repos'){ midi.push('audrey'); soir.push('audrey'); } else soir.push('audrey');
-  if(['mer','sam','dim'].includes(k)) midi.push('cassandre','achille');
+  if(we || (k==='mer' && audrey==='repos')) midi.push('cassandre','achille');
   soir.push('cassandre','achille');
   return {midi, soir};
 }
