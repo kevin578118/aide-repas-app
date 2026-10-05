@@ -256,7 +256,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.05-1829';
+const APP_VERSION = '2026.10.05-1959';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -887,13 +887,26 @@ async function delItem(id){
 const DK=['lun','mar','mer','jeu','ven','sam','dim'];
 const DAYN={lun:'Lundi',mar:'Mardi',mer:'Mercredi',jeu:'Jeudi',ven:'Vendredi',sam:'Samedi',dim:'Dimanche'};
 function nextMonday(){ const d=new Date(); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()+(dow<=1?-dow:7-dow)); return toIso(d); }
+const QUI=[['kevin',FOYER.papa],['audrey',FOYER.maman],['cassandre',FOYER.enfants[0]||'Enfant 1'],['achille',FOYER.enfants[1]||'Enfant 2']];
+const QUI_NOM=Object.fromEntries(QUI);
+// Qui mange par défaut : Kevin jamais le midi, toujours le soir. Audrey du matin → soir seulement ; du soir → midi seulement ;
+// repos → les deux. Enfants : cantine lun/mar/jeu/ven, à la maison mer/sam/dim le midi, toujours le soir.
+function defautsQui(k, audrey){
+  const midi=[], soir=['kevin'];
+  if(audrey==='matin') soir.push('audrey'); else if(audrey==='soir') midi.push('audrey'); else if(audrey==='repos'){ midi.push('audrey'); soir.push('audrey'); } else soir.push('audrey');
+  if(['mer','sam','dim'].includes(k)) midi.push('cassandre','achille');
+  soir.push('cassandre','achille');
+  return {midi, soir};
+}
+function nomsQui(list){ if(!list||!list.length) return 'personne'; if(list.length===4) return 'tout le monde'; return list.map(x=>QUI_NOM[x]||x).join(', '); }
 function emptyContext(){
-  const jours={}; for(const k of DK) jours[k]={audrey:'', midi:(k==='sam'||k==='dim')?'oui':'non', soir:'oui'};
+  const jours={}; for(const k of DK) jours[k]={audrey:'', ...defautsQui(k,''), custom:false};
   return {jours, events:[], cuisine_longue:[], commande:{souhaite:false,jour:'',quoi:''}, envies:'', restes:'', fruits_legumes:'magasin', besoins_maison:'', invites:''};
 }
 function openWizard(draft){
   const ctx=Object.assign(emptyContext(), draft?.context||{});
   if(!ctx.jours||Object.keys(ctx.jours).length<7) ctx.jours=emptyContext().jours;
+  for(const k of DK){ const j=ctx.jours[k]; if(!Array.isArray(j.midi)){ Object.assign(j, defautsQui(k, j.audrey), {custom:false}); } }
   state.wiz={step:0, week_start: draft?.week_start || nextMonday(), id: draft?.id||null, ctx};
   render(); window.scrollTo(0,0);
 }
@@ -910,10 +923,11 @@ function renderWizard(){
     body=`<h2>Le planning ${/^[aeiouyhéè]/i.test(FOYER.maman)?'d\'':'de '}${esc(FOYER.maman)}</h2><p class="lead">Du matin, du soir, ou en repos ?</p><div class="card" style="padding:4px 14px">`+
       DK.map(k=>`<div class="dayrow"><div class="dn">${DAYN[k].slice(0,3)}.</div>${seg('audrey:'+k, c.jours[k].audrey, [['matin','Matin'],['soir','Soir'],['repos','Repos']])}</div>`).join('')+`</div>`;
   } else if(s===2){
-    body=`<h2>Quels repas prévoir ?</h2><p class="lead">Le midi, quelqu'un mange à la maison ? Le soir, tout le monde est là ?</p>
-      <div class="card" style="padding:4px 14px"><div class="dayrow" style="border:0"><div class="dn"></div><div class="grow small" style="text-align:center">Midi</div><div class="grow small" style="text-align:center">Soir</div></div>`+
-      DK.map(k=>`<div class="dayrow"><div class="dn">${DAYN[k].slice(0,3)}.</div>${seg('midi:'+k, c.jours[k].midi, [['non','Non'],['oui','Oui']])}${seg('soir:'+k, c.jours[k].soir, [['oui','Oui'],['non','Non']])}</div>`).join('')+`</div>
-      <p class="hint">Mardi et vendredi soir, samedi midi : sport des enfants, Claude le sait déjà.</p>`;
+    for(const k of DK){ if(!c.jours[k].custom) Object.assign(c.jours[k], defautsQui(k, c.jours[k].audrey)); }
+    body=`<h2>Qui mange à la maison ?</h2><p class="lead">Pré-rempli d'après le planning ${/^[aeiouyhéè]/i.test(FOYER.maman)?'d\'':'de '}${esc(FOYER.maman)} et les habitudes. Touchez un prénom pour changer.</p>`+
+      DK.map(k=>`<div class="card" style="padding:8px 14px;margin-bottom:8px"><div style="font-weight:600;margin-bottom:4px">${DAYN[k]}${c.jours[k].audrey?` <span class="small">· ${esc(FOYER.maman)} ${['matin','soir'].includes(c.jours[k].audrey)?'du '+c.jours[k].audrey:c.jours[k].audrey}</span>`:''}</div>`+
+        ['midi','soir'].map(slot=>`<div class="row" style="padding:3px 0;align-items:flex-start"><div style="width:38px;flex:none;font-size:12px;color:var(--muted);text-transform:uppercase;padding-top:9px">${slot}</div><div class="chips" style="margin:0;gap:6px">${QUI.map(([id,nom])=>`<button data-qui="${k}:${slot}:${id}" class="${c.jours[k][slot].includes(id)?'on':''}" aria-pressed="${c.jours[k][slot].includes(id)}" style="min-height:34px;padding:4px 10px;font-size:13px">${esc(nom)}</button>`).join('')}</div></div>`).join('')+`</div>`).join('')+
+      `<p class="hint">Mardi et vendredi soir, samedi midi : sport des enfants, Claude le sait déjà.</p>`;
   } else if(s===3){
     body=`<h2>Quelque chose de spécial ?</h2><p class="lead">Invités, anniversaire, sortie, soirée dehors…</p>
       ${c.events.map((e,i)=>`<div class="evrow"><select data-evd="${i}" aria-label="Jour">${DK.map(k=>`<option value="${addDays(z.week_start,DK.indexOf(k))}" ${e.day===addDays(z.week_start,DK.indexOf(k))?'selected':''}>${DAYN[k]}</option>`).join('')}</select><input data-evl="${i}" value="${esc(e.label)}" placeholder="ex. Anniversaire, 6 invités" aria-label="Événement"><button class="del" data-evx="${i}" aria-label="Enlever">${ic('x','s')}</button></div>`).join('')}
@@ -936,12 +950,12 @@ function renderWizard(){
       <p class="hint">${state.backlog.length?`Déjà noté dans « Il manque » : ${state.backlog.map(b=>esc(b.label)).join(', ')}.`:'Rien dans « Il manque » pour l\'instant.'}</p>`;
   } else {
     const pl=DK.map(k=>c.jours[k].audrey?`${DAYN[k].slice(0,3)} ${c.jours[k].audrey}`:null).filter(Boolean).join(' · ')||'non renseigné';
-    const midis=DK.filter(k=>c.jours[k].midi==='oui').map(k=>DAYN[k].slice(0,3)).join(', ')||'aucun';
-    const soirs=DK.filter(k=>c.jours[k].soir==='non').map(k=>DAYN[k].slice(0,3)).join(', ');
+    const midis=DK.map(k=>c.jours[k].midi.length?`${DAYN[k].slice(0,3)} : ${nomsQui(c.jours[k].midi)}`:null).filter(Boolean).join('<br>')||'personne';
+    const soirs=DK.filter(k=>c.jours[k].soir.length<4).map(k=>`${DAYN[k].slice(0,3)} : ${nomsQui(c.jours[k].soir)}`).join('<br>');
     body=`<h2>On récapitule</h2><p class="lead">Semaine du ${fmtDate(z.week_start)} au ${fmtDate(addDays(z.week_start,6))}</p>
       <div class="card recap"><dl style="margin:0">
         <dt>${esc(FOYER.maman)}</dt><dd>${esc(pl)}</dd>
-        <dt>Midis à la maison</dt><dd>${esc(midis)}</dd>${soirs?`<dt>Soirs sans repas</dt><dd>${esc(soirs)}</dd>`:''}
+        <dt>Le midi</dt><dd>${midis}</dd><dt>Le soir</dt><dd>${soirs?soirs+'<br>':''}les autres soirs : tout le monde</dd>
         <dt>Événements</dt><dd>${c.events.length?c.events.map(e=>`${fmtDate(e.day)} : ${esc(e.label)}`).join('<br>'):'aucun'}${c.invites?`<br>${esc(c.invites)}`:''}</dd>
         <dt>Cuisine longue OK</dt><dd>${c.cuisine_longue.length?c.cuisine_longue.map(k=>DAYN[k]).join(', '):'non'}</dd>
         <dt>Repas commandé</dt><dd>${c.commande.souhaite?`${DAYN[c.commande.jour]||'?'} : ${esc(c.commande.quoi||'à voir')}`:'non'}</dd>
@@ -978,6 +992,7 @@ function bindWizard(){
     else if(name==='fl') c.fruits_legumes=v;
     if(name==='commande') render(); else sg.querySelectorAll('button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-pressed',x===b); });
   });
+  document.querySelectorAll('[data-qui]').forEach(b=>b.onclick=()=>{ const [k,slot,id]=b.dataset.qui.split(':'); const arr=c.jours[k][slot]; const i=arr.indexOf(id); if(i>=0) arr.splice(i,1); else arr.push(id); c.jours[k].custom=true; b.classList.toggle('on'); b.setAttribute('aria-pressed',b.classList.contains('on')); });
   const lg=$('#long'); if(lg) lg.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const k=b.dataset.k; c.cuisine_longue=c.cuisine_longue.includes(k)?c.cuisine_longue.filter(x=>x!==k):[...c.cuisine_longue,k]; b.classList.toggle('on'); b.setAttribute('aria-pressed',b.classList.contains('on')); };
   const ea=$('#evadd'); if(ea) ea.onclick=()=>{ collectWizard(); c.events.push({day:z.week_start,label:''}); render(); setTimeout(()=>{ const l=document.querySelectorAll('[data-evl]'); l[l.length-1]?.focus(); },50); };
   document.querySelectorAll('[data-evx]').forEach(b=>b.onclick=()=>{ collectWizard(); c.events.splice(+b.dataset.evx,1); render(); });
@@ -1060,6 +1075,7 @@ async function onSession(session){
   await checkMember(); if(state.member===false){ render(); return; }
   await Promise.all([loadStatic(), loadWeeks()]);
   await loadWeekData(); subscribe();
+  if(location.hash==='#preparer'){ history.replaceState(null,'',location.pathname); openWizard(state.draft); }
 }
 boot();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
