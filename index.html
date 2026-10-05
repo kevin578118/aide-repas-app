@@ -100,6 +100,26 @@ nav.tabs button.on{color:var(--accent);font-weight:600}
 .planning{font-size:12px;color:var(--muted)}
 .counter{font-size:13px;color:var(--muted);margin-bottom:6px}
 .hidden{display:none !important}
+.wiz-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.wiz-head .step{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.progress{height:4px;background:var(--chip);border-radius:2px;margin:0 0 14px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent)}
+.wiz h2{font-size:20px;margin:0 0 4px}
+.wiz p.lead{color:var(--muted);margin:0 0 14px;font-size:14px}
+.dayrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.dayrow:first-child{border-top:0}
+.dayrow .dn{width:68px;flex:none;font-weight:600;font-size:14px}
+.dayrow .seg{flex:1;margin:0}
+.dayrow .seg button{min-height:34px;font-size:13px}
+.wiz-foot{display:flex;gap:10px;margin-top:18px}
+.wiz-foot button{flex:1}
+textarea{min-height:84px;resize:vertical}
+.evrow{display:flex;gap:8px;align-items:center;margin-top:8px}
+.evrow select{width:38%}
+.recap dt{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:10px}
+.recap dd{margin:2px 0 0;font-size:15px}
+.banner{background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:14px;display:flex;align-items:center;gap:10px}
+.banner b{display:block}
 .small{font-size:13px;color:var(--muted)}
 </style>
 </head>
@@ -111,7 +131,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.04-2207';
+const APP_VERSION = '2026.10.05-1259';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -140,7 +160,8 @@ const state = {
   session:null, member:null, tab: localStorage_get('tab') || 'menu',
   weeks:[], weekIdx:0, meals:[], items:[], backlog:[], household:[], members:[],
   filter: localStorage_get('filter') || 'drive', hideDone: localStorage_get('hideDone') === '1',
-  email: localStorage_get('email') || '', mode:'login', err:'', busy:false
+  email: localStorage_get('email') || '', mode:'login', err:'', busy:false,
+  draft:null, wiz:null
 };
 function localStorage_get(k){ try{ return localStorage.getItem('ar_'+k); }catch{ return null; } }
 function localStorage_set(k,v){ try{ localStorage.setItem('ar_'+k, v); }catch{} }
@@ -176,6 +197,7 @@ function render(){
   if(!state.session){ app.innerHTML=renderLogin(); bindLogin(); return; }
   if(state.member===false){ app.innerHTML=renderNotMember(); bindNotMember(); return; }
   if(state.member===null){ app.innerHTML='<div class="empty">Chargement…</div>'; return; }
+  if(state.wiz){ app.innerHTML=renderWizard(); bindWizard(); return; }
   const body = state.tab==='menu'?renderMenu(): state.tab==='courses'?renderCourses(): state.tab==='manque'?renderManque(): renderReglages();
   app.innerHTML = `${body}
     <nav class="tabs">
@@ -227,7 +249,9 @@ function renderWeekSwitch(){
 function renderMenu(){
   const w=curWeek();
   let html=`<header class="top"><h1>${salut()} ${esc(moi())}</h1><span class="sub">au menu</span></header><main>`;
-  if(!w){ return html+`<div class="empty">Rien au menu pour l'instant.<br><span class="small">Dès que ${esc(FOYER.papa)} aura fait la semaine avec Claude sur le Mac, ça apparaît ici.</span></div></main>`; }
+  if(state.draft){ html+=`<div class="banner" id="draftbanner">📝<span><b>Semaine du ${fmtDate(state.draft.week_start)} préparée</b>En attente du menu de Claude. Touchez pour modifier.</span></div>`; }
+  else { html+=`<button class="banner" id="prep" style="width:100%;text-align:left;border:0;cursor:pointer">📝<span><b>Préparer la semaine prochaine</b>2 minutes de questions, puis Claude fait le menu.</span></button>`; }
+  if(!w){ return html+`<div class="empty">Rien au menu pour l'instant.<br><span class="small">Préparez la semaine ici, puis ${esc(FOYER.papa)} lance Claude sur le Mac et le menu apparaît.</span></div></main>`; }
   html+=renderWeekSwitch();
   const ctx=w.context||{}; const planning=ctx.planning||{}; const events=ctx.events||[];
   if(ctx.meteo) html+=`<div class="small" style="margin:-4px 0 10px">☀️ ${esc(ctx.meteo)}</div>`;
@@ -370,6 +394,8 @@ function bindLogin(){
 }
 function bindNotMember(){ $('#logout').onclick=()=>sb.auth.signOut(); }
 function bindMain(){
+  const pr=$('#prep'); if(pr) pr.onclick=()=>openWizard(state.draft);
+  const db=$('#draftbanner'); if(db) db.onclick=()=>openWizard(state.draft);
   document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{ state.tab=b.dataset.tab; localStorage_set('tab',state.tab); render(); });
   document.querySelectorAll('[data-wk]').forEach(b=>b.onclick=async()=>{ state.weekIdx=Math.max(0,Math.min(state.weeks.length-1,state.weekIdx-Number(b.dataset.wk))); await loadWeekData(); });
   document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{ state.filter=b.dataset.filter; localStorage_set('filter',state.filter); render(); });
@@ -412,6 +438,120 @@ async function addBacklog(label, h){
   toast('C\'est noté pour la prochaine liste'); await loadWeekData();
 }
 
+// ---------- Assistant « Préparer la semaine » ----------
+const DK=['lun','mar','mer','jeu','ven','sam','dim'];
+const DAYN={lun:'Lundi',mar:'Mardi',mer:'Mercredi',jeu:'Jeudi',ven:'Vendredi',sam:'Samedi',dim:'Dimanche'};
+const DEF_SOIR={mar:'sport',ven:'sport'}; // contraintes fixes connues
+function nextMonday(){ const d=new Date(); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()+(dow<=1?-dow:7-dow)); return toIso(d); }
+function emptyContext(){
+  const jours={}; for(const k of DK) jours[k]={audrey:'', midi:(k==='sam'||k==='dim')?'oui':'non', soir:'oui'};
+  return {jours, events:[], cuisine_longue:[], commande:{souhaite:false,jour:'',quoi:''}, envies:'', restes:'', fruits_legumes:'magasin', besoins_maison:'', invites:''};
+}
+function openWizard(draft){
+  const ctx=Object.assign(emptyContext(), draft?.context||{});
+  if(!ctx.jours||Object.keys(ctx.jours).length<7) ctx.jours=emptyContext().jours;
+  state.wiz={step:0, week_start: draft?.week_start || nextMonday(), id: draft?.id||null, ctx};
+  render(); window.scrollTo(0,0);
+}
+const WIZ_STEPS=['Semaine','Audrey','Repas à prévoir','Événements','Envies','Courses','Récap'];
+function seg(name,val,opts){ return `<div class="seg" data-seg="${name}">${opts.map(([v,l])=>`<button data-v="${v}" class="${val===v?'on':''}">${l}</button>`).join('')}</div>`; }
+function renderWizard(){
+  const z=state.wiz, c=z.ctx, n=WIZ_STEPS.length, s=z.step;
+  let body='';
+  if(s===0){
+    body=`<h2>On prépare quelle semaine ?</h2><p class="lead">Par défaut, la semaine qui vient.</p>
+      <label class="l" for="ws">Lundi de la semaine</label><input id="ws" type="date" value="${z.week_start}">
+      <p class="hint">Semaine du ${fmtDate(z.week_start)} au ${fmtDate(addDays(z.week_start,6))}</p>`;
+  } else if(s===1){
+    body=`<h2>Le planning de ${esc(FOYER.maman)}</h2><p class="lead">Du matin, du soir, ou en repos ?</p><div class="card" style="padding:4px 14px">`+
+      DK.map(k=>`<div class="dayrow"><div class="dn">${DAYN[k].slice(0,3)}.</div>${seg('audrey:'+k, c.jours[k].audrey, [['matin','Matin'],['soir','Soir'],['repos','Repos']])}</div>`).join('')+`</div>`;
+  } else if(s===2){
+    body=`<h2>Quels repas prévoir ?</h2><p class="lead">Le midi, quelqu'un mange à la maison ? Le soir, tout le monde est là ?</p>
+      <div class="card" style="padding:4px 14px"><div class="dayrow" style="border:0"><div class="dn"></div><div class="grow small" style="text-align:center">Midi</div><div class="grow small" style="text-align:center">Soir</div></div>`+
+      DK.map(k=>`<div class="dayrow"><div class="dn">${DAYN[k].slice(0,3)}.</div>${seg('midi:'+k, c.jours[k].midi, [['non','Non'],['oui','Oui']])}${seg('soir:'+k, c.jours[k].soir, [['oui','Oui'],['non','Non']])}</div>`).join('')+`</div>
+      <p class="hint">Mardi et vendredi soir, samedi midi : sport des enfants, Claude le sait déjà.</p>`;
+  } else if(s===3){
+    body=`<h2>Quelque chose de spécial ?</h2><p class="lead">Invités, anniversaire, sortie, soirée dehors…</p>
+      ${c.events.map((e,i)=>`<div class="evrow"><select data-evd="${i}">${DK.map(k=>`<option value="${addDays(z.week_start,DK.indexOf(k))}" ${e.day===addDays(z.week_start,DK.indexOf(k))?'selected':''}>${DAYN[k]}</option>`).join('')}</select><input data-evl="${i}" value="${esc(e.label)}" placeholder="ex. Anniversaire, 6 invités"><button class="del" data-evx="${i}">×</button></div>`).join('')}
+      <button id="evadd" style="margin-top:10px;width:100%">+ Ajouter un événement</button>
+      <label class="l" for="inv">Des invités à un repas ? Qui, combien, ce qu'ils aiment ?</label><textarea id="inv" placeholder="ex. Jeudi soir, les parents d'Audrey, 2 personnes, pas de poisson">${esc(c.invites||'')}</textarea>`;
+  } else if(s===4){
+    body=`<h2>Envies et contraintes</h2><p class="lead">Pour que Claude vise juste.</p>
+      <label class="l">Jours où une cuisine plus longue que 20 min est OK</label>
+      <div class="chips" id="long">${DK.map(k=>`<button data-k="${k}" class="${c.cuisine_longue.includes(k)?'on':''}">${DAYN[k].slice(0,3)}.</button>`).join('')}</div>
+      <label class="l">Un repas commandé cette semaine ?</label>
+      ${seg('commande', c.commande.souhaite?'oui':'non', [['non','Non'],['oui','Oui']])}
+      ${c.commande.souhaite?`<div class="row"><select id="cjour">${DK.map(k=>`<option value="${k}" ${c.commande.jour===k?'selected':''}>${DAYN[k]}</option>`).join('')}</select><input id="cquoi" value="${esc(c.commande.quoi)}" placeholder="pizza, McDo, sushis…"></div>`:''}
+      <label class="l" for="envies">Envies particulières</label><textarea id="envies" placeholder="ex. envie de poisson, un plat réconfortant, tester une recette Jow">${esc(c.envies)}</textarea>
+      <label class="l" for="restes">Restes ou produits à écouler</label><textarea id="restes" placeholder="ex. un reste de riz, des courgettes, un paquet de lardons" style="min-height:60px">${esc(c.restes)}</textarea>`;
+  } else if(s===5){
+    body=`<h2>Côté courses</h2><p class="lead">Deux questions, et c'est tout.</p>
+      <label class="l">Les fruits et légumes, on les prend où ?</label>
+      ${seg('fl', c.fruits_legumes, [['magasin',esc(FOYER.magasin)],['drive','Drive'],['mixte','Les deux']])}
+      <label class="l" for="bm">Besoins pour la maison en plus de ce qui est déjà noté dans « Il manque »</label><textarea id="bm" placeholder="ex. lessive, piles, cadeau anniversaire">${esc(c.besoins_maison)}</textarea>
+      <p class="hint">${state.backlog.length?`Déjà noté dans « Il manque » : ${state.backlog.map(b=>esc(b.label)).join(', ')}.`:'Rien dans « Il manque » pour l\'instant.'}</p>`;
+  } else {
+    const pl=DK.map(k=>c.jours[k].audrey?`${DAYN[k].slice(0,3)} ${c.jours[k].audrey}`:null).filter(Boolean).join(' · ')||'non renseigné';
+    const midis=DK.filter(k=>c.jours[k].midi==='oui').map(k=>DAYN[k].slice(0,3)).join(', ')||'aucun';
+    const soirs=DK.filter(k=>c.jours[k].soir==='non').map(k=>DAYN[k].slice(0,3)).join(', ');
+    body=`<h2>On récapitule</h2><p class="lead">Semaine du ${fmtDate(z.week_start)} au ${fmtDate(addDays(z.week_start,6))}</p>
+      <div class="card recap"><dl style="margin:0">
+        <dt>${esc(FOYER.maman)}</dt><dd>${esc(pl)}</dd>
+        <dt>Midis à la maison</dt><dd>${esc(midis)}</dd>${soirs?`<dt>Soirs sans repas</dt><dd>${esc(soirs)}</dd>`:''}
+        <dt>Événements</dt><dd>${c.events.length?c.events.map(e=>`${fmtDate(e.day)} : ${esc(e.label)}`).join('<br>'):'aucun'}${c.invites?`<br>${esc(c.invites)}`:''}</dd>
+        <dt>Cuisine longue OK</dt><dd>${c.cuisine_longue.length?c.cuisine_longue.map(k=>DAYN[k]).join(', '):'non'}</dd>
+        <dt>Repas commandé</dt><dd>${c.commande.souhaite?`${DAYN[c.commande.jour]||'?'} : ${esc(c.commande.quoi||'à voir')}`:'non'}</dd>
+        ${c.envies?`<dt>Envies</dt><dd>${esc(c.envies)}</dd>`:''}${c.restes?`<dt>À écouler</dt><dd>${esc(c.restes)}</dd>`:''}
+        <dt>Fruits et légumes</dt><dd>${{magasin:FOYER.magasin,drive:'Drive',mixte:'Les deux'}[c.fruits_legumes]}</dd>
+        ${c.besoins_maison?`<dt>Maison</dt><dd>${esc(c.besoins_maison)}</dd>`:''}
+      </dl></div>
+      <p class="hint">Ensuite, sur le Mac : « On planifie la semaine ». Claude lira tout ça et proposera le menu.</p>`;
+  }
+  return `<main class="wiz">
+    <div class="wiz-head"><button class="icon" id="wclose" aria-label="Fermer">×</button><span class="step">Étape ${s+1} sur ${n} · ${WIZ_STEPS[s]}</span></div>
+    <div class="progress"><i style="width:${Math.round((s+1)/n*100)}%"></i></div>
+    ${body}
+    <div class="wiz-foot">${s>0?`<button id="wprev">Retour</button>`:''}${s<n-1?`<button id="wnext" class="primary">Suivant</button>`:`<button id="wsave" class="primary" ${state.busy?'disabled':''}>C'est prêt pour Claude</button>`}</div>
+  </main>`;
+}
+function curWeekCtx(id){ const w=state.weeks.find(x=>x.id===id); return w?.context||{}; }
+function collectWizard(){
+  const z=state.wiz, c=z.ctx, s=z.step;
+  if(s===0){ const v=$('#ws').value; if(v){ const d=new Date(v+'T00:00:00'); d.setDate(d.getDate()-((d.getDay()+6)%7)); z.week_start=toIso(d); } }
+  if(s===3){ document.querySelectorAll('[data-evd]').forEach(el=>c.events[+el.dataset.evd].day=el.value); document.querySelectorAll('[data-evl]').forEach(el=>c.events[+el.dataset.evl].label=el.value.trim()); c.events=c.events.filter(e=>e.label); c.invites=$('#inv').value.trim(); }
+  if(s===4){ c.envies=$('#envies').value.trim(); c.restes=$('#restes').value.trim(); const cj=$('#cjour'), cq=$('#cquoi'); if(cj){ c.commande.jour=cj.value; c.commande.quoi=cq.value.trim(); } }
+  if(s===5){ c.besoins_maison=$('#bm').value.trim(); }
+}
+function bindWizard(){
+  const z=state.wiz, c=z.ctx;
+  $('#wclose').onclick=()=>{ if(confirm('Fermer sans enregistrer ?')){ state.wiz=null; render(); } };
+  const prev=$('#wprev'); if(prev) prev.onclick=()=>{ collectWizard(); z.step--; render(); window.scrollTo(0,0); };
+  const next=$('#wnext'); if(next) next.onclick=()=>{ collectWizard(); z.step++; render(); window.scrollTo(0,0); };
+  document.querySelectorAll('[data-seg]').forEach(sg=>sg.onclick=e=>{
+    const b=e.target.closest('button'); if(!b) return; const [name,k]=sg.dataset.seg.split(':'); const v=b.dataset.v;
+    if(name==='audrey'||name==='midi'||name==='soir') c.jours[k][name]=v;
+    else if(name==='commande'){ collectWizard(); c.commande.souhaite=(v==='oui'); }
+    else if(name==='fl') c.fruits_legumes=v;
+    if(name==='commande') render(); else sg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  });
+  const lg=$('#long'); if(lg) lg.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const k=b.dataset.k; c.cuisine_longue=c.cuisine_longue.includes(k)?c.cuisine_longue.filter(x=>x!==k):[...c.cuisine_longue,k]; b.classList.toggle('on'); };
+  const ea=$('#evadd'); if(ea) ea.onclick=()=>{ collectWizard(); c.events.push({day:z.week_start,label:''}); render(); setTimeout(()=>{ const l=document.querySelectorAll('[data-evl]'); l[l.length-1]?.focus(); },50); };
+  document.querySelectorAll('[data-evx]').forEach(b=>b.onclick=()=>{ collectWizard(); c.events.splice(+b.dataset.evx,1); render(); });
+  const ws=$('#ws'); if(ws) ws.onchange=()=>{ collectWizard(); render(); };
+  const sv=$('#wsave'); if(sv) sv.onclick=async()=>{
+    state.busy=true; render();
+    const planning={}; for(const k of DK) if(c.jours[k].audrey) planning[k]=c.jours[k].audrey;
+    const context=Object.assign({}, c, {planning, prepare_par: state.session.user.email, prepare_le: new Date().toISOString()});
+    const {data:ex}=await sb.from('weeks').select('id,status').eq('week_start',z.week_start).maybeSingle();
+    let error;
+    if(ex && ex.status!=='brouillon'){ ({error}=await sb.from('weeks').update({context: Object.assign({}, curWeekCtx(ex.id), context)}).eq('id',ex.id)); }
+    else { ({error}=await sb.from('weeks').upsert({week_start:z.week_start, status:'brouillon', context}, {onConflict:'week_start'})); }
+    state.busy=false;
+    if(error){ toast('Erreur : '+error.message); render(); return; }
+    state.wiz=null; toast(ex&&ex.status!=='brouillon'?'Contexte mis à jour, Claude en tiendra compte':'Semaine préparée, à Claude de jouer'); await loadWeeks(); await loadWeekData();
+  };
+}
+
 // ---------- Données ----------
 async function loadStatic(){
   const [{data:members},{data:household}] = await Promise.all([
@@ -421,8 +561,11 @@ async function loadStatic(){
   state.members=members||[]; state.household=household||[];
 }
 async function loadWeeks(){
-  const {data}=await sb.from('weeks').select('*').neq('status','brouillon').order('week_start',{ascending:false}).limit(12);
-  state.weeks=data||[];
+  const [{data},{data:drafts}]=await Promise.all([
+    sb.from('weeks').select('*').neq('status','brouillon').order('week_start',{ascending:false}).limit(12),
+    sb.from('weeks').select('*').eq('status','brouillon').gte('week_start',addDays(todayIso(),-6)).order('week_start',{ascending:false}).limit(1)
+  ]);
+  state.weeks=data||[]; state.draft=(drafts&&drafts[0])||null;
   const today=todayIso();
   let idx=state.weeks.findIndex(w=>w.week_start<=today && addDays(w.week_start,6)>=today);
   if(idx<0){ // prochaine semaine à venir, sinon la plus récente
