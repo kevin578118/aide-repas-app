@@ -243,6 +243,70 @@ body.nonav .snack{bottom:calc(20px + env(safe-area-inset-bottom))}
 .evrow select{width:38%}
 .recap dt{font-size:13px;color:var(--muted);font-weight:600;margin-top:12px}
 .recap dd{margin:2px 0 0;font-size:15px}
+
+/* Menu proposé par Claude : relecture jour par jour, puis semaine entière */
+.dstrip{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:-8px 0 16px}
+.dstrip button{min-height:34px;padding:0;border-radius:9px;font-size:12px;font-weight:600;background:var(--surface);color:var(--muted);border:2px solid transparent;display:grid;place-items:center}
+.dstrip button.ok{background:var(--accent-soft);color:var(--accent-soft-text)}
+.dstrip button.ko{background:var(--ink);color:var(--on-ink)}
+.dstrip button.cur{border-color:var(--accent);color:var(--text)}
+.rev-day{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 10px}
+.rev-day h2{font-size:26px;margin:0;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.rev-day .wx{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);white-space:nowrap;padding-bottom:3px}
+.rev-day .wx svg.i{color:var(--accent)}
+.who{display:flex;flex-direction:column;gap:6px;margin:12px 0 2px}
+.who .row{align-items:flex-start}
+.who .slot{width:36px;flex:none;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding-top:5px}
+.who .p{display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:7px;background:var(--accent-soft);color:var(--accent-soft-text);font-size:13px;font-weight:600}
+.who .p.off{background:transparent;color:var(--muted);text-decoration:line-through;font-weight:500;border:1px dashed var(--line2)}
+.who .none{font-size:13px;color:var(--muted);padding-top:4px}
+.pm{background:var(--bg);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-top:12px}
+.pm.changed{border-color:var(--accent)}
+.pm .ph{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.slotl{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.pm h3{font-size:20px;line-height:1.2;margin:2px 0 8px;font-weight:600;letter-spacing:-.01em}
+.pm .why{font-size:14px;color:var(--muted);line-height:1.4;margin:8px 0 0}
+.pm .rec{color:var(--accent)}
+.bal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.bal div{background:var(--surface);border-radius:12px;padding:8px 10px;min-height:56px}
+.bal span{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.bal b{display:block;font-size:14px;font-weight:600;margin-top:3px;line-height:1.25}
+.bal .miss b{color:var(--warn)}
+.hist{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:14px;line-height:1.4}
+.hist svg.i{color:var(--muted);margin-top:2px}
+.hist b{font-weight:600}
+.alerts{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.alerts div{display:flex;gap:6px;align-items:flex-start;font-size:13px;font-weight:600;color:var(--warn)}
+.alerts svg.i{margin-top:1px}
+.resp{margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--accent-soft);color:var(--accent-soft-text);font-size:14px;line-height:1.4}
+.resp b{display:block;font-size:13px}
+.prevrem{margin-top:10px;font-size:14px;color:var(--muted);font-style:italic}
+.verdict{background:var(--surface);border-radius:18px;padding:16px;margin-top:18px}
+.verdict h3{margin:0 0 10px;font-size:16px;font-weight:600}
+.vbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vbtns button{min-height:48px;border:1px solid var(--line2);background:var(--bg);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.vbtns button.ok.on{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.vbtns button.ko.on{background:var(--ink);color:var(--on-ink);border-color:transparent}
+.verdict textarea{margin-top:10px;min-height:72px;background:var(--bg)}
+.verdict .chips{margin-top:8px}
+.verdict .chips button{min-height:34px;font-size:13px}
+.wk{display:grid;grid-template-columns:40px minmax(0,1fr) 28px;gap:12px;padding:12px 0;border-top:1px solid var(--line);align-items:start;width:100%;background:none;border-radius:0;text-align:left}
+.wk:first-of-type{border-top:0}
+.wk .t{display:block;font-size:15px;font-weight:600;line-height:1.3}
+.wk .t + .t{margin-top:6px}
+.wk .m{display:block;font-size:13px;color:var(--muted)}
+.wk .rem{display:block;font-size:13px;color:var(--text);margin-top:6px;font-style:italic}
+.wk .st{display:grid;place-items:center;width:28px;height:28px;border-radius:14px;margin-top:4px;font-size:13px;font-weight:600}
+.wk .st.ok{background:var(--accent-soft);color:var(--accent-soft-text)}
+.wk .st.ko{background:var(--ink);color:var(--on-ink)}
+.wk .st.todo{border:1px dashed var(--line2);color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.stats div{background:var(--surface);border-radius:12px;padding:10px}
+.stats b{display:block;font-size:22px;font-weight:600;letter-spacing:-.02em}
+.stats span{font-size:12px;color:var(--muted)}
+.done{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;background:var(--accent-soft);color:var(--accent-soft-text);font-size:14px;line-height:1.4;margin-bottom:14px}
+.done b{display:block;font-size:15px}
+.done svg.i{margin-top:1px;flex:none}
 </style>
 </head>
 <body>
@@ -256,7 +320,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.05-2029';
+const APP_VERSION = '2026.10.06-0609';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -308,6 +372,12 @@ const ICONS = {
   pause:'<rect x="6.5" y="5" width="3.5" height="14" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="5" width="3.5" height="14" rx="1" fill="currentColor" stroke="none"/>',
   reset:'<path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4.5h4.5"/>',
   note:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>',
+  rain:'<path d="M7 15a4.5 4.5 0 1 1 1.3-8.8A6 6 0 0 1 19.4 8.8 3.2 3.2 0 0 1 18.3 15H7z"/><path d="M8 18l-1 2.5M12 18l-1 2.5M16 18l-1 2.5"/>',
+  snow:'<path d="M7 15a4.5 4.5 0 1 1 1.3-8.8A6 6 0 0 1 19.4 8.8 3.2 3.2 0 0 1 18.3 15H7z"/><path d="M8 18.5v.01M12 19.5v.01M16 18.5v.01"/>',
+  bolt:'<path d="M7 14a4.5 4.5 0 1 1 1.3-8.8A6 6 0 0 1 19.4 7.8 3.2 3.2 0 0 1 18.3 14H7z"/><path d="M12.5 13l-2 4h3l-2 4"/>',
+  suncloud:'<path d="M9 18.5a4 4 0 1 1 1.2-7.8A5.5 5.5 0 0 1 20.6 12.9 3 3 0 0 1 19.5 18.5H9z"/><path d="M6.3 9.8a4 4 0 0 1 6.4-3.3M8 3v1.5M3 8h1.5M4.5 4.5l1 1"/>',
+  msg:'<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-5 3.5V17H6.5A2.5 2.5 0 0 1 4 14.5z"/>',
+  send:'<path d="M4 12L20 4l-4 16-4-7z"/><path d="M12 13l8-9"/>',
 };
 const ic = (n, c='') => `<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
 
@@ -317,7 +387,8 @@ const state = {
   near:[], dishes:[], feedback:[], swapMarks:{},
   filter: localStorage_get('filter') || 'drive', showDone:false, edit:false,
   email: localStorage_get('email') || '', mode:'login', err:'', busy:false,
-  draft:null, wiz:null
+  draft:null, wiz:null,
+  proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[]
 };
 function localStorage_get(k){ try{ return localStorage.getItem('ar_'+k); }catch{ return null; } }
 function localStorage_set(k,v){ try{ localStorage.setItem('ar_'+k, v); }catch{} }
@@ -425,6 +496,7 @@ function render(){
   if(!state.session){ app.innerHTML=renderLogin(); bindLogin(); }
   else if(state.member===false){ app.innerHTML=renderNotMember(); bindNotMember(); }
   else if(state.member===null){ app.innerHTML='<div class="empty">Chargement…</div>'; }
+  else if(state.rev){ app.innerHTML=renderReview(); bindReview(); }
   else if(state.wiz){ app.innerHTML=renderWizard(); bindWizard(); }
   else {
     const t=state.tab;
@@ -480,6 +552,7 @@ function weekNav(){
 function nextMondayAfterToday(){ return addDays(todayIso(), 7-dayIdx(todayIso())); }
 function needPrep(){ return dayIdx(todayIso())>=3 && !state.weeks.some(w=>w.week_start===nextMondayAfterToday()); }
 function prepBanner(force){
+  const pb=propBanner(); if(pb) return pb;   // une proposition de Claude attend : elle passe devant
   if(state.draft) return `<button class="banner" id="draftbanner">${ic('note')}<span><b>Semaine du ${fmtDate(state.draft.week_start)} préparée</b>En attente du menu de Claude. Touchez pour modifier.</span></button>`;
   if(force || needPrep()) return `<button class="banner" id="prep">${ic('note')}<span><b>Préparer la semaine qui vient</b>2 minutes de questions, puis Claude fait le menu.</span></button>`;
   return '';
@@ -835,6 +908,7 @@ function bindLogin(){
 function bindNotMember(){ $('#logout').onclick=()=>sb.auth.signOut(); }
 function bindMain(){
   const pr=$('#prep'); if(pr) pr.onclick=()=>openWizard(state.draft);
+  const orv=$('#openrev'); if(orv) orv.onclick=openReview;
   const db=$('#draftbanner'); if(db) db.onclick=()=>openWizard(state.draft);
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
   document.querySelectorAll('[data-wk]').forEach(b=>b.onclick=async()=>{ state.weekIdx=Math.max(0,Math.min(state.weeks.length-1,state.weekIdx-Number(b.dataset.wk))); await loadWeekData(); });
@@ -1013,6 +1087,226 @@ function bindWizard(){
   };
 }
 
+// ---------- Menu proposé par Claude : relecture jour par jour, puis semaine entière ----------
+// Claude écrit sa proposition dans menu_proposals (content), le foyer répond dans la même ligne (review).
+const PROT={viande_rouge:'Viande rouge',volaille:'Volaille',porc:'Porc',poisson:'Poisson',oeufs:'Œufs',vege:'Végétarien',charcuterie:'Charcuterie',mixte:'Mixte',aucune:'Sans protéine'};
+const BASES={pates:'Pâtes',riz:'Riz',pdt:'Pommes de terre',pain:'Pain',semoule:'Semoule',legumineuses:'Légumineuses',autre:'Autre',sans:'Sans féculent'};
+const WX={soleil:'sun',eclaircies:'suncloud',nuage:'cloud',pluie:'rain',orage:'bolt',neige:'snow',chaud:'sun'};
+const AVIS={refait:'On refait',bof:'Bof',jamais:'Plus jamais'};
+const NO_BAL=['restes','commande','exterieur','libre'];
+const REM_CHIPS=['Trop long ce jour-là','Déjà mangé récemment','Pas envie','Plus simple','Un autre jour','Pas pour les enfants'];
+function wxIcon(j){ if(j?.meteo_icon && WX[j.meteo_icon]) return WX[j.meteo_icon]; const t=String(j?.meteo||'').toLowerCase(); return /orage/.test(t)?'bolt':/neige/.test(t)?'snow':/pluie|averse|bruine/.test(t)?'rain':/soleil|ensoleill|beau|chaud/.test(t)?'sun':/éclairc|eclairc|variable/.test(t)?'suncloud':'cloud'; }
+function guessProt(t){ t=t.toLowerCase(); return /saumon|poisson|cabillaud|thon|crevette|colin|lieu|merlu|sardine|truite|dorade/.test(t)?'poisson':/poulet|dinde|volaille|canard|escalope/.test(t)?'volaille':/bœuf|boeuf|steak|haché|hachis|bolognaise|burger|veau|agneau|bavette/.test(t)?'viande_rouge':/porc|lardon|saucisse|chipolata|filet mignon/.test(t)?'porc':/jambon|croque|raclette|charcut/.test(t)?'charcuterie':/œuf|oeuf|omelette|quiche|tortilla/.test(t)?'oeufs':/lentille|pois chiche|tofu|végé|vege|gratin de|soupe|velouté|risotto/.test(t)?'vege':'mixte'; }
+function guessBase(t){ t=t.toLowerCase(); return /pâte|pate|spaghetti|lasagne|gnocchi|tagliatelle|penne|macaroni|nouille/.test(t)?'pates':/riz|risotto/.test(t)?'riz':/pomme de terre|patate|purée|puree|frite|hachis|dauphinois|rösti/.test(t)?'pdt':/pain|croque|sandwich|wrap|pizza|burger|tartine|galette/.test(t)?'pain':/semoule|couscous|boulgour|quinoa/.test(t)?'semoule':/lentille|pois chiche|haricot blanc|haricots rouges/.test(t)?'legumineuses':'autre'; }
+const protOf=m=>m.proteine_type||guessProt(m.title||''), baseOf=m=>m.base||guessBase(m.title||'');
+const cookedMeal=m=>!NO_COOK.includes(m.kind) && m.kind!=='restes';
+const revDays=p=>p.review?.jours||{};
+function propDay(k){ return addDays(state.propWeek.week_start, DK.indexOf(k)); }
+function dayMeals(p,k){ const day=propDay(k); return (p.content?.repas||[]).filter(m=>m.day===day).sort(mealSort); }
+function dayState(p,k){ if(!dayMeals(p,k).length) return 'na'; const r=revDays(p)[k]; return r?.ok===true?'ok':r?.ok===false?'ko':'todo'; }
+function reviewedCount(p){ return DK.filter(k=>['ok','ko'].includes(dayState(p,k))).length; }
+function firstUnreviewed(p){ if(p.status!=='proposee') return 7; const i=DK.findIndex(k=>dayState(p,k)==='todo'); return i<0?7:i; }
+// Ce que l'on sait du plat : ce que Claude a mis dans la proposition (historique), complété par la table dishes et les avis de l'app.
+function dishInfo(m){
+  const t=String(m.title||'').toLowerCase(), d=state.dishFull.find(x=>x.name.toLowerCase()===t), h=m.historique||{};
+  const av=state.avisAll.filter(f=>String(f.content.title||'').toLowerCase()===t).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];
+  const avis=h.dernier_avis || (av?{avis:av.content.avis, par:prenom(av.content.par), le:av.created_at.slice(0,10)}:null);
+  return {found:!!(d||h.last_served||h.times_served), rating:h.rating||d?.rating||null, last_served:h.last_served||d?.last_served||null, times_served:h.times_served??d?.times_served??0, notes:h.notes||d?.notes||null, avis};
+}
+function histText(d){
+  if(!d.found) return `<b>Jamais servi</b> : une nouveauté pour ${esc(FOYER.enfants.join(' et '))}.`;
+  const dot=x=>/\.$/.test(x)?x:x+'.';   // « 16 sept. » ne prend pas de second point
+  let s=d.times_served?`Servi ${d.times_served===1?'une fois':d.times_served+' fois'}`:'Déjà au menu'; if(d.last_served) s+=`, la dernière le <b>${esc(fmtDate(d.last_served))}</b>`; s=dot(s);
+  if(d.avis) s+=' '+dot(`${esc(d.avis.par||'Avis')} : « <b>${AVIS[d.avis.avis]||esc(d.avis.avis)}</b> »${d.avis.le?` le ${esc(fmtDate(d.avis.le))}`:''}`);
+  else if(d.rating==='valide') s+=' Plat validé par la famille.'; else if(d.rating==='banni') s+=' Plat écarté.';
+  if(d.notes) s+=` ${esc(d.notes)}`;
+  return s;
+}
+// Points de vigilance, dans l'esprit des avertissements de l'échange de repas.
+function propAlerts(m, ctx, all){
+  const out=[]; if(!cookedMeal(m)) return out;
+  const k=DKEYS[dayIdx(m.day)], mins=m.prep_minutes||0, cons=constraints(m.day,m.slot,ctx), d=dishInfo(m);
+  if(cons.some(c=>c.kind==='sport') && mins>10) out.push(`${mins} min un ${m.slot} de sport : visez 10 min`);
+  else if(cons.some(c=>c.kind==='seul') && mins>15) out.push(`${mins} min alors que ${FOYER.papa} est seul avec les enfants`);
+  if(cons.some(c=>c.kind==='seul') && !d.found && m.kind!=='assemblage') out.push(`Plat à tester un soir où ${FOYER.papa} est seul`);
+  if(mins>20 && !(ctx.cuisine_longue||[]).includes(k)) out.push(`${mins} min un jour sans cuisine longue`);
+  if(d.rating==='banni') out.push('Plat noté « Plus jamais »');
+  if(d.last_served && d.last_served>=addDays(m.day,-21) && d.last_served<m.day) out.push(`Déjà servi le ${fmtDate(d.last_served)}, il y a moins de 3 semaines`);
+  if(d.avis?.avis==='bof' && d.avis.le && d.avis.le>=addDays(m.day,-42)) out.push(`Noté « Bof » le ${fmtDate(d.avis.le)}`);
+  if(m.equilibre && !NO_BAL.includes(m.kind)){ const miss=['proteine','legume','feculent'].filter(x=>!m.equilibre[x]); if(miss.length) out.push('Il manque '+miss.map(x=>({proteine:'une protéine',legume:'un légume',feculent:'un féculent'})[x]).join(' et ')); }
+  const pr=protOf(m);
+  if(!['mixte','aucune','vege'].includes(pr) && all.some(x=>x!==m && cookedMeal(x) && Math.abs((new Date(x.day+'T00:00:00')-new Date(m.day+'T00:00:00'))/864e5)<=1 && protOf(x)===pr)) out.push(`${PROT[pr]} aussi la veille ou le lendemain`);
+  return out;
+}
+function propBanner(){
+  const p=state.proposal, w=state.propWeek; if(!p||!w) return '';
+  if(p.status==='proposee'){ const n=reviewedCount(p); return `<button class="banner" id="openrev">${ic('msg')}<span><b>Claude propose le menu du ${esc(fmtDate(w.week_start))}${p.version>1?` · version ${p.version}`:''}</b>${n?`${n} jour${n>1?'s':''} sur 7 relu${n>1?'s':''}. Touchez pour continuer.`:'À relire jour par jour, puis valider la semaine.'}</span></button>`; }
+  if(p.status==='remarques') return `<button class="banner" id="openrev">${ic('msg')}<span><b>Remarques envoyées à Claude</b>Il prépare la version ${p.version+1} du menu du ${esc(fmtDate(w.week_start))}.</span></button>`;
+  return '';
+}
+async function loadProposal(){
+  const {data}=await sb.from('menu_proposals').select('*').in('status',['proposee','remarques','validee']).gte('created_at',addDays(todayIso(),-21)).order('created_at',{ascending:false}).limit(5);
+  const rows=(data||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+  let p=rows[0]||null, w=null;
+  if(p){ const r=await sb.from('weeks').select('*').eq('id',p.week_id).maybeSingle(); w=r.data||null; if(!w || addDays(w.week_start,6)<todayIso()) p=null; }
+  if(p && state.proposal && p.id===state.proposal.id && revSaveT) p.review=state.proposal.review;   // une saisie est en cours : on garde la version locale
+  const prevId=state.proposal?.id, prevStatus=state.proposal?.status;
+  state.proposal=p; state.propWeek=p?w:null;
+  if(state.rev){
+    if(!p) state.rev=null;
+    else if(p.id!==prevId){ await loadReviewData(p); state.rev={step:firstUnreviewed(p)}; toast(`Nouvelle proposition de Claude (version ${p.version})`); }
+    else if(p.status!==prevStatus && p.status!=='proposee') state.rev.step=7;
+  }
+  render();
+}
+async function loadReviewData(p){
+  const [{data:prev},{data:dishes},{data:avis}]=await Promise.all([
+    p.version>1 ? sb.from('menu_proposals').select('*').eq('week_id',p.week_id).eq('version',p.version-1).maybeSingle() : Promise.resolve({data:null}),
+    sb.from('dishes').select('*'),
+    sb.from('feedback_log').select('content,created_at').eq('kind','autre').gte('created_at',addDays(todayIso(),-120))
+  ]);
+  state.propPrev=prev||null; state.dishFull=dishes||[]; state.avisAll=(avis||[]).filter(f=>f.content?.type==='avis_repas');
+}
+async function openReview(){ const p=state.proposal; if(!p) return; await loadReviewData(p); state.rev={step:firstUnreviewed(p)}; render(); window.scrollTo(0,0); }
+
+function renderReview(){
+  const p=state.proposal, w=state.propWeek, z=state.rev;
+  if(!p||!w){ state.rev=null; return renderHome(); }
+  const ro=p.status!=='proposee';
+  return `<main class="wiz">
+    <div class="wiz-head"><button class="iconbtn round" id="rclose" aria-label="Fermer">${ic('x','s')}</button><span class="step">${z.step<7?`Jour ${z.step+1} sur 7`:'Toute la semaine'} · Menu du ${esc(fmtDate(w.week_start))}${p.version>1?` · version ${p.version}`:''}</span></div>
+    <div class="progress"><i style="width:${Math.round((z.step+1)/8*100)}%"></i></div>
+    <div class="dstrip" role="tablist" aria-label="Jours">${DK.map((k,i)=>{ const st=dayState(p,k); return `<button role="tab" data-ds="${i}" class="${st==='ok'?'ok':st==='ko'?'ko':''}${z.step===i?' cur':''}" aria-selected="${z.step===i}">${DAYN[k].slice(0,3)}</button>`; }).join('')}<button role="tab" data-ds="7" class="${z.step===7?'cur':''}" aria-selected="${z.step===7}" aria-label="Toute la semaine">${ic('cal','s')}</button></div>
+    ${z.step<7?renderRevDay(p,w,z.step,ro):renderRevWeek(p,w,ro)}
+  </main>`;
+}
+function renderRevDay(p,w,i,ro){
+  const k=DK[i], day=propDay(k), ctx=w.context||{}, j=(p.content?.jours||{})[k]||{}, ms=dayMeals(p,k), r=revDays(p)[k]||{}, all=p.content?.repas||[], dt=new Date(day+'T00:00:00');
+  const tags=dayTags(day,ctx);
+  const qui=(slot)=>{ const l=ctx.jours?.[k]?.[slot]; if(!Array.isArray(l)) return ''; return `<div class="row"><span class="slot">${slot}</span><div class="tags" style="gap:5px">${l.length?QUI.map(([id,nom])=>`<span class="p${l.includes(id)?'':' off'}">${esc(nom)}</span>`).join(''):`<span class="none">personne à la maison</span>`}</div></div>`; };
+  let h=`<div class="rev-day"><div><div class="dn" style="color:var(--accent)">${DAYN[k]}</div><h2>${dt.getDate()} ${MONTHS_L[dt.getMonth()]}</h2></div>${j.meteo?`<span class="wx">${ic(wxIcon(j),'s')}${esc(j.meteo)}</span>`:''}</div>`;
+  if(tags.length) h+=`<div class="tags">${tags.map(c=>tagHtml(c,true)).join('')}</div>`;
+  if(j.note) h+=`<p class="sub" style="margin:10px 0 0">${esc(j.note)}</p>`;
+  if(ctx.jours) h+=`<div class="who">${qui('midi')}${qui('soir')}</div>`;
+  if(j.reponse) h+=`<div class="resp"><b>Claude, version ${p.version}</b>${esc(j.reponse)}</div>`;
+  const prevR=state.propPrev?.review?.jours?.[k]; if(prevR?.remarque) h+=`<p class="prevrem">Votre remarque sur la version ${state.propPrev.version} : « ${esc(prevR.remarque)} »</p>`;
+  h+= ms.length ? ms.map(m=>renderPropMeal(m,ctx,all)).join('') : `<section class="pm"><span class="slotl">Ce jour-là</span><h3>Rien à prévoir</h3><p class="why">Personne à la maison, ou on improvise.</p></section>`;
+  if(ms.length) h+=renderVerdict(r,ro);
+  h+=`<div class="wiz-foot">${i>0?`<button id="rprev" class="outline">Retour</button>`:''}<button id="rnext" class="primary">${i<6?'Jour suivant':'Voir la semaine'}</button></div>`;
+  return h;
+}
+function renderPropMeal(m,ctx,all){
+  const d=dishInfo(m), al=propAlerts(m,ctx,all), e=m.equilibre, prev=state.propPrev?.content?.repas?.find(x=>x.day===m.day&&x.slot===m.slot);
+  const changed=!!(m.modifie || (state.propPrev && (!prev || prev.title!==m.title)));
+  const kindt=(m.kind==='recette'||m.kind==='assemblage') && !d.found && m.kind==='recette' ? 'Recette à tester' : (KIND[m.kind]||m.kind);
+  let h=`<section class="pm${changed?' changed':''}"><div class="ph"><div><span class="slotl">${m.slot}${changed?` · <span style="color:var(--accent)">modifié</span>`:''}</span><h3>${esc(m.title)}</h3></div>${m.url?`<a class="rec" href="${esc(m.url)}" target="_blank" rel="noopener" aria-label="Recette : ${esc(m.title)}">${ic('ext','s')}</a>`:''}</div>
+    <div class="tags">${m.prep_minutes?`<span class="tag">${ic('clock','s')}${m.prep_minutes} min</span>`:''}<span class="tag">${esc(kindt)}</span>${cookedMeal(m)&&PROT[protOf(m)]&&protOf(m)!=='mixte'?`<span class="tag">${esc(PROT[protOf(m)])}</span>`:''}</div>`;
+  if(m.pourquoi) h+=`<p class="why">${esc(m.pourquoi)}</p>`;
+  if(e && !NO_BAL.includes(m.kind)) h+=`<div class="bal">${[['proteine','Protéine'],['legume','Légume'],['feculent','Féculent']].map(([x,l])=>`<div class="${e[x]?'':'miss'}"><span>${l}</span><b>${esc(e[x]||'manque')}</b></div>`).join('')}</div>`;
+  if(cookedMeal(m)) h+=`<div class="hist">${ic('clock','s')}<span>${histText(d)}</span></div>`;
+  if(m.notes) h+=`<div class="hist">${ic('note','s')}<span>${esc(m.notes)}</span></div>`;
+  if(m.ingredients_cles?.length) h+=`<div class="hist">${ic('bag','s')}<span>${esc(m.ingredients_cles.join(', '))}</span></div>`;
+  if(prev && prev.title!==m.title) h+=`<p class="prevrem">Avant : ${esc(prev.title)}</p>`;
+  if(al.length) h+=`<div class="alerts">${al.map(a=>`<div>${ic('alert','xs')}<span>${esc(a)}</span></div>`).join('')}</div>`;
+  return h+`</section>`;
+}
+function renderVerdict(r,ro){
+  if(ro) return (r.ok===false||r.remarque)?`<div class="verdict"><h3>${r.ok===false?'À changer':'Votre remarque'}</h3><p style="margin:0">${esc(r.remarque||'')}</p></div>`:'';
+  return `<div class="verdict"><h3>Ce jour-là, ça vous va ?</h3>
+    <div class="vbtns"><button class="ok${r.ok===true?' on':''}" data-v="ok" aria-pressed="${r.ok===true}">${ic('check','s')}Ça me va</button><button class="ko${r.ok===false?' on':''}" data-v="ko" aria-pressed="${r.ok===false}">${ic('msg','s')}À changer</button></div>
+    <textarea id="rrem" aria-label="Remarque" placeholder="${r.ok===false?'Qu\'est-ce qui ne va pas, et vers quoi aller ?':'Une remarque ou une adaptation ? (facultatif)'}">${esc(r.remarque||'')}</textarea>
+    <div class="chips">${REM_CHIPS.map(c=>`<button type="button" data-chip="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+    <div class="err hidden" id="rneed">Dites d'abord si ce jour vous va, ou ce qu'il faut changer.</div></div>`;
+}
+function renderRevWeek(p,w,ro){
+  const ctx=w.context||{}, all=(p.content?.repas||[]), g=p.review?.global||{};
+  let h=ro?doneBox(p):'';
+  h+=`<h2>${ro?'Le menu de la semaine':'Toute la semaine d\'un coup d\'œil'}</h2><p class="lead">${p.content?.meteo_semaine?esc(p.content.meteo_semaine)+'. ':''}${ro?'':'Vérifiez la cohérence de l\'ensemble, puis validez ou envoyez vos remarques à Claude.'}</p>`;
+  h+=`<div class="card" style="padding:2px 14px">`+DK.map((k,i)=>{ const day=propDay(k), ms=dayMeals(p,k), st=dayState(p,k), r=revDays(p)[k]||{};
+    return `<button class="wk" data-day="${i}" aria-label="${DAYN[k]}"><div><div class="dn">${DAYN[k].slice(0,3)}</div><div class="dd">${new Date(day+'T00:00:00').getDate()}</div></div><div>${ms.length?ms.map(m=>`<span class="t">${ms.length>1?`<span class="slotl">${m.slot}</span> `:''}${esc(m.title)}</span><span class="m">${esc(mealMeta(m))}</span>`).join(''):`<span class="m" style="padding-top:8px">Rien à prévoir</span>`}${r.remarque?`<span class="rem">« ${esc(r.remarque)} »</span>`:''}</div><span class="st ${st}">${st==='ok'?ic('check','xs'):st==='ko'?ic('msg','xs'):st==='todo'?'?':''}</span></button>`; }).join('')+`</div>`;
+  const cooked=all.filter(cookedMeal);
+  const count=(fn)=>{ const c={}; for(const m of cooked){ const v=fn(m); c[v]=(c[v]||0)+1; } return Object.entries(c).sort((a,b)=>b[1]-a[1]); };
+  const prots=count(protOf), bases=count(baseOf);
+  const recettes=all.filter(m=>m.kind==='recette').length, news=cooked.filter(m=>!dishInfo(m).found).length, mins=cooked.reduce((s,m)=>s+(m.prep_minutes||0),0);
+  const alerts=[]; for(const m of cooked) for(const a of propAlerts(m,ctx,all)) alerts.push(`${DAYN[DKEYS[dayIdx(m.day)]].slice(0,3)}. ${m.slot} : ${a}`);
+  for(const [b,n] of bases) if(n>2 && !['autre','sans'].includes(b)) alerts.push(`${BASES[b]} ${n} fois dans la semaine`);
+  for(const [pr,n] of prots) if(n>=3 && !['mixte','vege','aucune'].includes(pr)) alerts.push(`${PROT[pr]} ${n} fois dans la semaine`);
+  h+=`<h3 class="cat" style="margin-top:22px">L'équilibre de la semaine</h3>
+    <div class="stats"><div><b>${all.length}</b><span>repas prévus</span></div><div><b>${recettes}</b><span>recette${recettes>1?'s':''} avec lien</span></div><div><b>${cooked.length?Math.round(mins/cooked.length):0}</b><span>min en moyenne</span></div></div>
+    <div class="kv"><span>Protéines</span><span class="tags">${prots.map(([k,n])=>`<span class="tag sm${n>=3&&!['mixte','vege','aucune'].includes(k)?' ink':''}">${esc(PROT[k]||k)} ×${n}</span>`).join('')||'—'}</span></div>
+    <div class="kv"><span>Féculents</span><span class="tags">${bases.map(([k,n])=>`<span class="tag sm${n>2&&!['autre','sans'].includes(k)?' ink':''}">${esc(BASES[k]||k)} ×${n}</span>`).join('')||'—'}</span></div>
+    <div class="kv"><span>Nouveautés</span><span>${news?`${news} plat${news>1?'s':''} jamais servi${news>1?'s':''}`:'aucune, que du connu'}</span></div>
+    ${alerts.length?`<div class="alerts" style="margin-top:12px">${alerts.map(a=>`<div>${ic('alert','xs')}<span>${esc(a)}</span></div>`).join('')}</div>`:`<p class="sub" style="margin-top:10px">Rien à signaler sur l'ensemble.</p>`}`;
+  if(ro){ if(g.remarque) h+=`<div class="verdict"><h3>Remarque sur l'ensemble</h3><p style="margin:0">${esc(g.remarque)}</p></div>`; return h+`<div class="wiz-foot"><button id="rclose2" class="outline">Fermer</button></div>`; }
+  h+=`<div class="verdict"><h3>Une remarque sur l'ensemble ?</h3><textarea id="rglob" aria-label="Remarque générale" placeholder="ex. trop de poisson, pas assez de légumes, plus de plats connus…">${esc(g.remarque||'')}</textarea></div>`;
+  return h+`<div class="wiz-foot" id="rfoot" style="flex-direction:column">${weekFoot(p)}</div>`;
+}
+function weekFoot(p){
+  // une remarque, même sur un jour qui « va », repart chez Claude : c'est une adaptation à faire
+  const todo=DK.filter(k=>dayState(p,k)==='todo'), kos=DK.filter(k=>dayState(p,k)==='ko'||(revDays(p)[k]?.remarque||'').trim()), hasRem=kos.length||(p.review?.global?.remarque||'').trim();
+  let h=todo.length?`<p class="hint center" style="margin:0 0 4px">Encore ${todo.length} jour${todo.length>1?'s':''} à relire : ${todo.map(k=>DAYN[k].toLowerCase()).join(', ')}.</p>`:'';
+  h+= hasRem ? `<button id="rsend" class="primary btn big" ${todo.length||state.busy?'disabled':''}>${ic('send','s')}Envoyer à Claude${kos.length?` · ${kos.length} remarque${kos.length>1?'s':''}`:''}</button>`
+             : `<button id="rvalid" class="primary btn big" ${todo.length||state.busy?'disabled':''}>${ic('check','s')}Valider le menu de la semaine</button>`;
+  return h;
+}
+function doneBox(p){
+  const par=p.review?.envoye_par?` par ${esc(prenom(p.review.envoye_par))}`:'';
+  if(p.status==='remarques') return `<div class="done">${ic('send')}<span><b>Remarques envoyées à Claude${par}</b>Sur le Mac, dites-lui « c'est envoyé » : il revient avec une version ${p.version+1}.</span></div>`;
+  if(p.status==='validee') return `<div class="done">${ic('check')}<span><b>Menu validé${par}</b>Il est dans l'onglet Semaine. Claude enchaîne sur la liste de courses.</span></div>`;
+  return '';
+}
+let revSaveT=null;
+function setReview(mut){ const p=state.proposal; p.review=p.review||{}; p.review.jours=p.review.jours||{}; mut(p.review); clearTimeout(revSaveT); revSaveT=setTimeout(()=>saveReview(p), 600); }
+async function saveReview(p){ revSaveT=null; const {error}=await sb.from('menu_proposals').update({review:p.review}).eq('id',p.id); if(error) toast('Erreur : '+error.message); }
+function syncVerdict(){
+  const r=revDays(state.proposal)[DK[state.rev.step]]||{};
+  document.querySelectorAll('[data-v]').forEach(b=>{ const on=b.dataset.v==='ok'?r.ok===true:r.ok===false; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
+  const ta=$('#rrem'); if(ta) ta.placeholder=r.ok===false?'Qu\'est-ce qui ne va pas, et vers quoi aller ?':'Une remarque ou une adaptation ? (facultatif)';
+}
+function bindReview(){
+  const p=state.proposal, z=state.rev, k=DK[z.step], go=(s)=>{ z.step=s; render(); window.scrollTo(0,0); };
+  const close=()=>{ state.rev=null; render(); };
+  $('#rclose').onclick=close; const c2=$('#rclose2'); if(c2) c2.onclick=close;
+  document.querySelectorAll('[data-ds]').forEach(b=>b.onclick=()=>go(+b.dataset.ds));
+  document.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>go(+b.dataset.day));
+  const pr=$('#rprev'); if(pr) pr.onclick=()=>go(z.step-1);
+  const nx=$('#rnext'); if(nx) nx.onclick=()=>{ if(p.status==='proposee' && dayState(p,k)==='todo'){ const n=$('#rneed'); if(n){ n.classList.remove('hidden'); n.scrollIntoView({block:'center',behavior:'smooth'}); } return; } go(z.step+1); };
+  const stamp=()=>({par:state.session.user.email, le:new Date().toISOString()});
+  document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ setReview(r=>{ r.jours[k]=Object.assign({},r.jours[k],{ok:b.dataset.v==='ok', remarque:$('#rrem')?.value.trim()||''},stamp()); }); syncVerdict(); $('#rneed')?.classList.add('hidden'); });
+  const ta=$('#rrem'); if(ta) ta.oninput=()=>{ setReview(r=>{ const cur=r.jours[k]||{}; r.jours[k]=Object.assign({},cur,{remarque:ta.value.trim(), ok:cur.ok===true?true:false},stamp()); }); syncVerdict(); $('#rneed')?.classList.add('hidden'); };
+  document.querySelectorAll('[data-chip]').forEach(b=>b.onclick=()=>{ const t=$('#rrem'); if(!t) return; t.value=(t.value.trim()?t.value.trim()+' · ':'')+b.dataset.chip; t.dispatchEvent(new Event('input')); t.focus(); });
+  const g=$('#rglob'); if(g) g.oninput=()=>{ setReview(r=>{ r.global={remarque:g.value.trim()}; }); const f=$('#rfoot'); if(f){ f.innerHTML=weekFoot(p); bindWeekFoot(); } };
+  bindWeekFoot();
+}
+function bindWeekFoot(){ const s=$('#rsend'); if(s) s.onclick=sendReview; const v=$('#rvalid'); if(v) v.onclick=validateMenu; }
+async function sendReview(){
+  const p=state.proposal; clearTimeout(revSaveT); revSaveT=null;
+  p.review=Object.assign({}, p.review, {envoye_par:state.session.user.email, envoye_le:new Date().toISOString()});
+  state.busy=true; render();
+  const {error}=await sb.from('menu_proposals').update({review:p.review, status:'remarques', decided_at:new Date().toISOString()}).eq('id',p.id);
+  state.busy=false;
+  if(error){ toast('Erreur : '+error.message); render(); return; }
+  p.status='remarques'; state.rev.step=7; render(); window.scrollTo(0,0); toast('Envoyé à Claude');
+}
+// Valider : la semaine passe en « valide » et les repas remplacent ceux de la semaine ; Claude complète ensuite (plats, courses).
+async function validateMenu(){
+  const p=state.proposal, w=state.propWeek; clearTimeout(revSaveT); revSaveT=null;
+  if(!confirm(`Valider le menu de la semaine du ${fmtDate(w.week_start)} ? Il remplace ce qui est prévu cette semaine-là dans l'app.`)) return;
+  state.busy=true; render();
+  p.review=Object.assign({}, p.review, {envoye_par:state.session.user.email, envoye_le:new Date().toISOString()});
+  const rows=(p.content?.repas||[]).map(m=>({week_id:w.id, day:m.day, slot:m.slot, title:m.title, kind:m.kind||'assemblage', url:m.url||null, prep_minutes:m.prep_minutes||null, notes:m.notes||null}));
+  const ctx=Object.assign({}, w.context||{}, p.content?.meteo_semaine?{meteo:p.content.meteo_semaine}:{}, {menu_valide_par:state.session.user.email, menu_valide_le:new Date().toISOString(), proposition_version:p.version});
+  let r=await sb.from('weeks').update({status:'valide', context:ctx}).eq('id',w.id);
+  if(!r.error) r=await sb.from('meals').delete().eq('week_id',w.id);
+  if(!r.error && rows.length) r=await sb.from('meals').insert(rows);
+  if(!r.error) r=await sb.from('menu_proposals').update({review:p.review, status:'validee', decided_at:new Date().toISOString()}).eq('id',p.id);
+  state.busy=false;
+  if(r.error){ toast('Erreur : '+r.error.message); render(); return; }
+  p.status='validee'; state.rev=null;
+  await loadWeeks(); const i=state.weeks.findIndex(x=>x.id===w.id); if(i>=0) state.weekIdx=i;
+  await loadWeekData(); setTab('semaine'); toast('Menu validé : il est dans la Semaine');
+}
+
 // ---------- Données ----------
 async function loadStatic(){
   const [{data:members},{data:household}] = await Promise.all([
@@ -1061,23 +1355,25 @@ function subscribe(){
     .on('postgres_changes',{event:'*',schema:'public',table:'shopping_items'},()=>loadWeekData())
     .on('postgres_changes',{event:'*',schema:'public',table:'meals'},()=>loadWeekData())
     .on('postgres_changes',{event:'*',schema:'public',table:'weeks'},async()=>{ await loadWeeks(); await loadWeekData(); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'menu_proposals'},()=>loadProposal())
     .subscribe();
 }
 async function boot(){
   const {data:{session}}=await sb.auth.getSession();
   await onSession(session);
   sb.auth.onAuthStateChange((_e,s)=>{ if((s&&!state.session)||(!s&&state.session)) onSession(s); });
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.session&&state.member) { loadWeeks().then(loadWeekData); } });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.session&&state.member) { loadWeeks().then(loadWeekData); loadProposal(); } });
   // le « prochain repas » change avec l'heure : on rafraîchit l'accueil chaque minute
-  setInterval(()=>{ if(state.tab==='accueil' && state.member && !state.wiz && !$('#sheet').classList.contains('on')) render(); }, 60000);
+  setInterval(()=>{ if(state.tab==='accueil' && state.member && !state.wiz && !state.rev && !$('#sheet').classList.contains('on')) render(); }, 60000);
 }
 async function onSession(session){
   state.session=session; state.member=null; render();
   if(!session){ if(channel){ sb.removeChannel(channel); channel=null; } return; }
   await checkMember(); if(state.member===false){ render(); return; }
-  await Promise.all([loadStatic(), loadWeeks()]);
+  await Promise.all([loadStatic(), loadWeeks(), loadProposal()]);
   await loadWeekData(); subscribe();
   if(location.hash==='#preparer'){ history.replaceState(null,'',location.pathname); openWizard(state.draft); }
+  else if(location.hash==='#menu'){ history.replaceState(null,'',location.pathname); if(state.proposal) openReview(); else toast('Pas de menu proposé pour l\'instant'); }
 }
 boot();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
