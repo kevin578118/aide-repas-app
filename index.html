@@ -320,7 +320,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.06-0609';
+const APP_VERSION = '2026.10.08-2112';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -1105,6 +1105,26 @@ function propDay(k){ return addDays(state.propWeek.week_start, DK.indexOf(k)); }
 function dayMeals(p,k){ const day=propDay(k); return (p.content?.repas||[]).filter(m=>m.day===day).sort(mealSort); }
 function dayState(p,k){ if(!dayMeals(p,k).length) return 'na'; const r=revDays(p)[k]; return r?.ok===true?'ok':r?.ok===false?'ko':'todo'; }
 function reviewedCount(p){ return DK.filter(k=>['ok','ko'].includes(dayState(p,k))).length; }
+// Jours repris d'une version précédente (« Ça me va », sans remarque, plats inchangés) : on ne les remontre pas.
+const isReprise=(p,k)=>!!revDays(p)[k]?.reprise;
+function stepAfter(p,i){ for(let j=i+1;j<7;j++) if(!isReprise(p,DK[j])) return j; return 7; }
+function stepBefore(p,i){ for(let j=i-1;j>=0;j--) if(!isReprise(p,DK[j])) return j; return -1; }
+async function carryOver(p,w){
+  if(p.status!=='proposee' || p.version<2 || p.review?.reprise) return;
+  const {data:prev}=await sb.from('menu_proposals').select('version,content,review').eq('week_id',p.week_id).eq('version',p.version-1).maybeSingle();
+  if(!prev) return;
+  const key=m=>m.slot+'|'+String(m.title||'').trim().toLowerCase();
+  const meals=(c,day)=>(c?.repas||[]).filter(m=>m.day===day);
+  const jours=Object.assign({}, p.review?.jours);
+  DK.forEach((k,i)=>{
+    const pr=prev.review?.jours?.[k], day=addDays(w.week_start,i), now=meals(p.content,day), before=meals(prev.content,day);
+    if(jours[k] || pr?.ok!==true || (pr.remarque||'').trim() || p.content?.jours?.[k]?.reponse) return;
+    if(!now.length || now.length!==before.length || now.some(m=>m.modifie) || now.map(key).sort().join()!==before.map(key).sort().join()) return;
+    jours[k]={ok:true, remarque:'', reprise:pr.reprise||prev.version, par:pr.par, le:pr.le};
+  });
+  p.review=Object.assign({}, p.review, {jours, reprise:true});
+  const {error}=await sb.from('menu_proposals').update({review:p.review}).eq('id',p.id); if(error) toast('Erreur : '+error.message);
+}
 function firstUnreviewed(p){ if(p.status!=='proposee') return 7; const i=DK.findIndex(k=>dayState(p,k)==='todo'); return i<0?7:i; }
 // Ce que l'on sait du plat : ce que Claude a mis dans la proposition (historique), complété par la table dishes et les avis de l'app.
 function dishInfo(m){
@@ -1140,7 +1160,7 @@ function propAlerts(m, ctx, all){
 }
 function propBanner(){
   const p=state.proposal, w=state.propWeek; if(!p||!w) return '';
-  if(p.status==='proposee'){ const n=reviewedCount(p); return `<button class="banner" id="openrev">${ic('msg')}<span><b>Claude propose le menu du ${esc(fmtDate(w.week_start))}${p.version>1?` · version ${p.version}`:''}</b>${n?`${n} jour${n>1?'s':''} sur 7 relu${n>1?'s':''}. Touchez pour continuer.`:'À relire jour par jour, puis valider la semaine.'}</span></button>`; }
+  if(p.status==='proposee'){ const n=reviewedCount(p), c=DK.filter(k=>isReprise(p,k)).length; if(c&&n===c&&c<7) return `<button class="banner" id="openrev">${ic('msg')}<span><b>Claude propose le menu du ${esc(fmtDate(w.week_start))} · version ${p.version}</b>${c} jour${c>1?'s':''} déjà validé${c>1?'s':''} : il reste ${7-c>1?`les ${7-c} jours modifiés`:'le jour modifié'} à relire.</span></button>`; return `<button class="banner" id="openrev">${ic('msg')}<span><b>Claude propose le menu du ${esc(fmtDate(w.week_start))}${p.version>1?` · version ${p.version}`:''}</b>${n?`${n} jour${n>1?'s':''} sur 7 relu${n>1?'s':''}. Touchez pour continuer.`:'À relire jour par jour, puis valider la semaine.'}</span></button>`; }
   if(p.status==='remarques') return `<button class="banner" id="openrev">${ic('msg')}<span><b>Remarques envoyées à Claude</b>Il prépare la version ${p.version+1} du menu du ${esc(fmtDate(w.week_start))}.</span></button>`;
   return '';
 }
@@ -1149,7 +1169,8 @@ async function loadProposal(){
   const rows=(data||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
   let p=rows[0]||null, w=null;
   if(p){ const r=await sb.from('weeks').select('*').eq('id',p.week_id).maybeSingle(); w=r.data||null; if(!w || addDays(w.week_start,6)<todayIso()) p=null; }
-  if(p && state.proposal && p.id===state.proposal.id && revSaveT) p.review=state.proposal.review;   // une saisie est en cours : on garde la version locale
+  if(p && state.proposal && p.id===state.proposal.id && revSaveT) p.review=state.proposal.review;
+  else if(p && w) await carryOver(p,w);   // une saisie est en cours : on garde la version locale
   const prevId=state.proposal?.id, prevStatus=state.proposal?.status;
   state.proposal=p; state.propWeek=p?w:null;
   if(state.rev){
@@ -1192,7 +1213,8 @@ function renderRevDay(p,w,i,ro){
   const prevR=state.propPrev?.review?.jours?.[k]; if(prevR?.remarque) h+=`<p class="prevrem">Votre remarque sur la version ${state.propPrev.version} : « ${esc(prevR.remarque)} »</p>`;
   h+= ms.length ? ms.map(m=>renderPropMeal(m,ctx,all)).join('') : `<section class="pm"><span class="slotl">Ce jour-là</span><h3>Rien à prévoir</h3><p class="why">Personne à la maison, ou on improvise.</p></section>`;
   if(ms.length) h+=renderVerdict(r,ro);
-  h+=`<div class="wiz-foot">${i>0?`<button id="rprev" class="outline">Retour</button>`:''}<button id="rnext" class="primary">${i<6?'Jour suivant':'Voir la semaine'}</button></div>`;
+  const nxt=ro?i+1:stepAfter(p,i), back=ro?i-1:stepBefore(p,i);
+  h+=`<div class="wiz-foot">${back>=0?`<button id="rprev" class="outline">Retour</button>`:''}<button id="rnext" class="primary">${nxt<7?'Jour suivant':'Voir la semaine'}</button></div>`;
   return h;
 }
 function renderPropMeal(m,ctx,all){
@@ -1212,7 +1234,8 @@ function renderPropMeal(m,ctx,all){
 }
 function renderVerdict(r,ro){
   if(ro) return (r.ok===false||r.remarque)?`<div class="verdict"><h3>${r.ok===false?'À changer':'Votre remarque'}</h3><p style="margin:0">${esc(r.remarque||'')}</p></div>`:'';
-  return `<div class="verdict"><h3>Ce jour-là, ça vous va ?</h3>
+  const rep=r.reprise?`<p class="prevrem" style="margin:0 0 10px">Déjà validé en version ${r.reprise}, inchangé depuis : vous pouvez passer.</p>`:'';
+  return `<div class="verdict"><h3>Ce jour-là, ça vous va ?</h3>${rep}
     <div class="vbtns"><button class="ok${r.ok===true?' on':''}" data-v="ok" aria-pressed="${r.ok===true}">${ic('check','s')}Ça me va</button><button class="ko${r.ok===false?' on':''}" data-v="ko" aria-pressed="${r.ok===false}">${ic('msg','s')}À changer</button></div>
     <textarea id="rrem" aria-label="Remarque" placeholder="${r.ok===false?'Qu\'est-ce qui ne va pas, et vers quoi aller ?':'Une remarque ou une adaptation ? (facultatif)'}">${esc(r.remarque||'')}</textarea>
     <div class="chips">${REM_CHIPS.map(c=>`<button type="button" data-chip="${esc(c)}">${esc(c)}</button>`).join('')}</div>
@@ -1269,11 +1292,11 @@ function bindReview(){
   $('#rclose').onclick=close; const c2=$('#rclose2'); if(c2) c2.onclick=close;
   document.querySelectorAll('[data-ds]').forEach(b=>b.onclick=()=>go(+b.dataset.ds));
   document.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>go(+b.dataset.day));
-  const pr=$('#rprev'); if(pr) pr.onclick=()=>go(z.step-1);
-  const nx=$('#rnext'); if(nx) nx.onclick=()=>{ if(p.status==='proposee' && dayState(p,k)==='todo'){ const n=$('#rneed'); if(n){ n.classList.remove('hidden'); n.scrollIntoView({block:'center',behavior:'smooth'}); } return; } go(z.step+1); };
+  const ro=p.status!=='proposee', pr=$('#rprev'); if(pr) pr.onclick=()=>go(ro?z.step-1:stepBefore(p,z.step));
+  const nx=$('#rnext'); if(nx) nx.onclick=()=>{ if(p.status==='proposee' && dayState(p,k)==='todo'){ const n=$('#rneed'); if(n){ n.classList.remove('hidden'); n.scrollIntoView({block:'center',behavior:'smooth'}); } return; } go(ro?z.step+1:stepAfter(p,z.step)); };
   const stamp=()=>({par:state.session.user.email, le:new Date().toISOString()});
-  document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ setReview(r=>{ r.jours[k]=Object.assign({},r.jours[k],{ok:b.dataset.v==='ok', remarque:$('#rrem')?.value.trim()||''},stamp()); }); syncVerdict(); $('#rneed')?.classList.add('hidden'); });
-  const ta=$('#rrem'); if(ta) ta.oninput=()=>{ setReview(r=>{ const cur=r.jours[k]||{}; r.jours[k]=Object.assign({},cur,{remarque:ta.value.trim(), ok:cur.ok===true?true:false},stamp()); }); syncVerdict(); $('#rneed')?.classList.add('hidden'); };
+  document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ setReview(r=>{ r.jours[k]=Object.assign({},r.jours[k],{ok:b.dataset.v==='ok', remarque:$('#rrem')?.value.trim()||'', reprise:undefined},stamp()); }); syncVerdict(); $('#rneed')?.classList.add('hidden'); });
+  const ta=$('#rrem'); if(ta) ta.oninput=()=>{ setReview(r=>{ const cur=r.jours[k]||{}; r.jours[k]=Object.assign({},cur,{remarque:ta.value.trim(), ok:cur.ok===true?true:false, reprise:undefined},stamp()); }); syncVerdict(); $('#rneed')?.classList.add('hidden'); };
   document.querySelectorAll('[data-chip]').forEach(b=>b.onclick=()=>{ const t=$('#rrem'); if(!t) return; t.value=(t.value.trim()?t.value.trim()+' · ':'')+b.dataset.chip; t.dispatchEvent(new Event('input')); t.focus(); });
   const g=$('#rglob'); if(g) g.oninput=()=>{ setReview(r=>{ r.global={remarque:g.value.trim()}; }); const f=$('#rfoot'); if(f){ f.innerHTML=weekFoot(p); bindWeekFoot(); } };
   bindWeekFoot();
