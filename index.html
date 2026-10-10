@@ -493,7 +493,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.10-2105';
+const APP_VERSION = '2026.10.10-2130';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -582,7 +582,7 @@ const state = {
   weeks:[], weekIdx:0, meals:[], items:[], backlog:[], household:[], placard:[], members:[],
   near:[], dishes:[], feedback:[], swapMarks:{}, push:null, homeAlt:null,
   filter: localStorage_get('filter') || 'drive', view: localStorage_get('view') || 'rayon', q:'', findOpen:false,
-  showNext:false, justAdded:null,
+  showNext:false, justAdded:null, invQ:'',
   email: localStorage_get('email') || '', mode:'login', err:'', busy:false,
   draft:null, wiz:null, drive:false, settings:{}, driveDone:false,
   proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[]
@@ -1228,8 +1228,18 @@ function stowBanner(){
 function renderInventaire(){
   const P=state.placard, tb=P.filter(x=>stk(x)!=='ok').sort((a,b)=>(stk(a)==='fini'?0:1)-(stk(b)==='fini'?0:1) || a.label.localeCompare(b.label));
   const last=P.map(x=>x.stock_at).filter(Boolean).sort().pop(), stow=toStow();
-  let h=`<header class="top"><div class="grow"><h1>Inventaire</h1><div class="date">${P.length} articles suivis${last?` · mis à jour ${agoLabel(last)}`:''}</div></div></header><main class="inv">`;
-  if(!P.length) return h+`<div class="empty"><b>Le placard est vide.</b><br>Ajoutez ci-dessous ce que vous avez toujours d'avance.</div>${plAddForm()}</main>`;
+  let h=`<header class="top"><div class="grow"><h1>Inventaire</h1><div class="date">${P.length} articles suivis${last?` · mis à jour ${agoLabel(last)}`:''}</div></div>
+    <button class="iconbtn round" id="pladdopen" aria-label="Ajouter un article au placard">${ic('plus','s')}</button></header><main class="inv">`;
+  if(!P.length) return h+`<div class="empty"><b>Le placard est vide.</b><br>Touchez + pour ajouter ce que vous avez toujours d'avance.</div></main>`;
+  const q=state.invQ.trim();
+  h+=`<div class="find" role="search" style="margin:4px 0 6px">${ic('search','s')}<input id="invq" type="search" value="${esc(state.invQ)}" placeholder="Chercher dans le placard…" aria-label="Chercher dans le placard" autocomplete="off" enterkeyhint="search">${q?`<button class="clr" id="invclr" aria-label="Effacer la recherche">${ic('x','s')}</button>`:''}</div>`;
+  if(q){
+    const t=fold(q), xs=P.filter(x=>fold(x.label).includes(t)), exact=P.some(x=>fold(x.label)===t);
+    h+=`<p class="sub" aria-live="polite" style="margin:8px 0 0">${xs.length?(xs.length===1?'1 article trouvé':xs.length+' articles trouvés'):`Rien qui corresponde à « ${esc(q)} » dans le placard.`}</p>`;
+    h+=xs.map(plRow).join('');
+    if(!exact) h+=`<button class="btn outline" id="pladdq" style="width:100%;margin-top:14px">${ic('plus','s')}Ajouter « ${esc(q)} » au placard</button>`;
+    return h+'</main>';
+  }
   h+=stowBanner();
   h+=`<section class="ibox" aria-labelledby="tbt"><div class="row"><h2 id="tbt" class="grow">À racheter</h2><span class="sub">${tb.length?(tb.length===1?'1 article':tb.length+' articles'):''}</span></div>`+
     (tb.length?tb.map(x=>{ const on=onList(x.label), got=!on && stow.some(s=>s.x===x); return `<div class="tbrow"><span class="sdot ${stk(x)}" aria-hidden="true"></span><span class="grow">${esc(x.label)}<span class="am">${STOCK[stk(x)]} · ${esc(chName(x.channel||'drive'))}${on?` · ${on.week_id==null?'sur la prochaine liste':'sur la liste'}`:got?' · acheté, à ranger':''}</span></span>${on||got?ic('check','s'):`<button class="ghost" data-relist="${x.id}">Remettre sur la liste</button>`}</div>`; }).join('')
@@ -1240,26 +1250,56 @@ function renderInventaire(){
     ${gs.map(g=>`<div class="guess"><span class="grow"><b>${esc(g.x.label)}</b><span class="am" style="white-space:normal">${esc(g.why)}</span></span><button class="outline sm" data-stk="${g.x.id}" data-s="ok">Il en reste</button><button class="outline sm wbtn" data-stk="${g.x.id}" data-s="bas">Bas</button></div>`).join('')}</section>`;
   for(const g of placardGroups()){
     const xs=P.filter(x=>x.placard===g); if(!xs.length) continue;
-    h+=`<h2 class="pl-g">${esc(g)}</h2>`+xs.map(x=>`<div class="pl-row"><span class="grow"><span class="an">${esc(x.label)}</span><span class="am">${x.stock_at?`${stk(x)==='ok'?'OK':STOCK[stk(x)]} ${esc(agoLabel(x.stock_at))}${x.stock_by&&x.stock_by!==state.session.user.email?' · '+esc(prenom(x.stock_by)):''}`:'pas encore vérifié'}</span></span>${stockSeg(x)}</div>`).join('');
+    h+=`<h2 class="pl-g">${esc(g)}</h2>`+xs.map(plRow).join('');
   }
-  return h+plAddForm()+'</main>';
+  return h+'</main>';
 }
-function plAddForm(){
-  return `<h2 class="pl-g">Ajouter au placard</h2><p class="noted" style="margin-top:0">Quelque chose que vous avez toujours d'avance et qui n'est pas dans la liste.</p>
-    <div class="row" style="margin-top:8px"><input id="pladd" class="grow" placeholder="ex. Curry, Lait de coco…" autocomplete="off" aria-label="Nouvel article du placard"><button class="addbtn" id="pladdgo" aria-label="Ajouter au placard">${ic('plus')}</button></div>
-    <select id="pladdg" aria-label="Groupe" style="margin-top:8px">${placardGroups().map(g=>`<option>${esc(g)}</option>`).join('')}</select>`;
+function plRow(x){
+  const lab=state.invQ.trim()?markIn(x.label, state.invQ):esc(x.label);
+  return `<div class="pl-row"><span class="grow"><span class="an">${lab}</span><span class="am">${state.invQ.trim()?esc(x.placard)+' · ':''}${x.stock_at?`${stk(x)==='ok'?'OK':STOCK[stk(x)]} ${esc(agoLabel(x.stock_at))}${x.stock_by&&x.stock_by!==state.session.user.email?' · '+esc(prenom(x.stock_by)):''}`:'pas encore vérifié'}</span></span>${stockSeg(x)}</div>`;
+}
+// surligne le texte cherché (même principe que markQ dans les courses)
+function markIn(label, q){ const saved=state.q; state.q=q; const out=markQ(label); state.q=saved; return out; }
+// Feuille « Ajouter au placard » : le nom, le groupe, et s'il en reste
+function openPlAdd(prefill){
+  let grp=placardGroups()[0], st='ok';
+  openSheet(`<div class="grab"></div><div class="sheet-h"><div><h2 id="pat">Ajouter au placard</h2><div class="sub">Quelque chose que vous avez toujours d'avance.</div></div>${closeBtn}</div>
+    <label class="l" for="pladd" style="margin-top:0">Article</label><input id="pladd" placeholder="ex. Curry, Lait de coco…" autocomplete="off" enterkeyhint="done" value="${esc(prefill||'')}">
+    <div id="pladup"></div>
+    <div class="l" id="paglab">Rangé avec</div><div class="chips" role="radiogroup" aria-labelledby="paglab" style="margin-top:0">${placardGroups().map(g=>`<button role="radio" data-pag="${esc(g)}" aria-checked="${g===grp}" class="${g===grp?'on':''}">${esc(g)}</button>`).join('')}</div>
+    <div class="l" id="pastl">Il en reste ?</div><div class="seg" role="radiogroup" aria-labelledby="pastl" style="margin-top:0">${['ok','bas','fini'].map(v=>`<button role="radio" data-pas="${v}" aria-checked="${v===st}" class="${v===st?'on':''}">${STOCK[v]}</button>`).join('')}</div>
+    <p class="noted" id="panote"></p>
+    <div class="foot" style="margin-top:16px"><button class="btn big primary" id="pladdgo">${ic('plus','s')}Ajouter au placard</button></div>`);
+  const s=$('#sheet'), inp=s.querySelector('#pladd'), go=s.querySelector('#pladdgo');
+  const refresh=()=>{
+    const ex=state.placard.find(x=>fold(x.label)===fold(inp.value.trim()));
+    s.querySelector('#pladup').innerHTML=ex?`<div class="dupw">${ic('alert','s')}<span><b>${esc(ex.label)}</b> est déjà dans le placard (${esc(ex.placard)}).</span></div>`:'';
+    s.querySelector('#panote').innerHTML=st==='ok'?'':'Il ira aussi sur la liste de courses.';
+    go.disabled=!inp.value.trim() || !!ex;
+  };
+  s.querySelectorAll('[data-pag]').forEach(b=>b.onclick=()=>{ grp=b.dataset.pag; s.querySelectorAll('[data-pag]').forEach(x=>{ x.setAttribute('aria-checked',x===b); x.classList.toggle('on',x===b); }); });
+  s.querySelectorAll('[data-pas]').forEach(b=>b.onclick=()=>{ st=b.dataset.pas; s.querySelectorAll('[data-pas]').forEach(x=>{ x.setAttribute('aria-checked',x===b); x.classList.toggle('on',x===b); }); refresh(); });
+  const add=async()=>{
+    const label=cap(inp.value.trim()); if(!label || go.disabled) return; go.disabled=true;
+    const {error}=await sb.from('household_items').upsert({label, category:/crème|creme|gruy|beurre|lait|fromage|yaourt/i.test(label)?'frais':'epicerie', channel:'drive', placard:grp, active:true},{onConflict:'label'});
+    if(error){ toast('Erreur : '+error.message); go.disabled=false; return; }
+    await loadStatic(); closeSheet(); state.invQ='';
+    const x=state.placard.find(p=>fold(p.label)===fold(label));
+    if(x && st!=='ok') await setStock(x, st); else { render(); toast(`${label} ajouté au placard`); }
+  };
+  inp.oninput=refresh; go.onclick=add; inp.onkeydown=e=>{ if(e.key==='Enter') add(); };
+  refresh(); if(!prefill) setTimeout(()=>inp.focus(), 60);
 }
 function bindInventaire(){
   document.querySelectorAll('#app [data-stk]').forEach(b=>b.onclick=()=>{ const x=state.placard.find(p=>p.id===b.dataset.stk); if(x) setStock(x, b.dataset.s); });
   document.querySelectorAll('[data-relist]').forEach(b=>b.onclick=async()=>{ const x=state.placard.find(p=>p.id===b.dataset.relist); if(!x) return; const ch=x.channel||'drive', t=targetWeek(ch); if(await addItem(x.label, ch, x, null, true, 'placard')) toast(`${x.label} ajouté sur ${targetLabel(t)}`); });
   const sg=$('#stowgo'); if(sg) sg.onclick=openStow;
-  const go=$('#pladdgo'); if(go){
-    const add=async()=>{ const label=$('#pladd').value.trim(); if(!label) return; const placard=$('#pladdg').value;
-      if(state.placard.some(x=>fold(x.label)===fold(label))){ toast(`${label} est déjà dans le placard`); return; }
-      const {error}=await sb.from('household_items').upsert({label, category:/crème|creme|gruy|beurre|lait|fromage/i.test(label)?'frais':'epicerie', channel:'drive', placard, active:true},{onConflict:'label'});
-      if(error){ toast('Erreur : '+error.message); return; }
-      await loadStatic(); render(); toast(`${label} ajouté au placard`); };
-    go.onclick=add; $('#pladd').onkeydown=e=>{ if(e.key==='Enter') add(); };
+  const po=$('#pladdopen'); if(po) po.onclick=()=>openPlAdd();
+  const pq=$('#pladdq'); if(pq) pq.onclick=()=>openPlAdd(state.invQ.trim());
+  const iq=$('#invq'); if(iq){
+    iq.oninput=()=>{ state.invQ=iq.value; render(); };
+    iq.onkeydown=e=>{ if(e.key==='Escape'){ state.invQ=''; render(); } else if(e.key==='Enter') iq.blur(); };
+    const ic2=$('#invclr'); if(ic2) ic2.onclick=()=>{ state.invQ=''; render(); $('#invq')?.focus(); };
   }
 }
 // « Tout est rangé ? » : ce qui a été acheté repasse en OK ; décoché = pas arrivé, repart sur la liste.
