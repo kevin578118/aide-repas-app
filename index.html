@@ -198,6 +198,29 @@ main{padding:8px 20px 28px;max-width:640px;margin:0 auto}
 .next-h .nc{font-size:14px;font-weight:600}
 .next-b{padding:0 14px 6px}
 .next-b .cat{margin-top:12px}
+/* Mode Drive : le foyer remplit le panier Leclerc lui-même, article par article */
+.drivego{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--ink);color:var(--on-ink);border-radius:16px;padding:14px 16px;margin:12px 0;font-size:14px;line-height:1.35;min-height:64px}
+.drivego b{display:block;font-size:16px}
+.drivego .grow{opacity:.85}
+.drivego .grow b{opacity:1}
+.dcard{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-top:10px}
+.dcard .dh{display:flex;align-items:baseline;gap:10px}
+.dcard .dl{flex:1;min-width:0;font-weight:600;font-size:17px;line-height:1.25}
+.dcard .dq{font-size:15px;font-weight:600;color:var(--accent-soft-text);background:var(--accent-soft);border-radius:8px;padding:2px 8px;flex:none}
+.dcard .dp{font-size:14px;color:var(--muted);margin-top:4px;line-height:1.35}
+.dcard .dp b{color:var(--text);font-weight:600}
+.dcard .da{display:grid;grid-template-columns:1fr 1.35fr;gap:8px;margin-top:10px}
+.dcard .da .btn{min-height:46px;font-size:15px;padding:0 10px;white-space:nowrap}
+.dcard .dmiss{grid-column:1/-1;background:none;color:var(--muted);font-size:14px;min-height:40px;padding:4px}
+.dcard.done{display:flex;align-items:center;gap:12px;padding:8px 8px 8px 14px;background:var(--surface);border-color:transparent}
+.dcard.done .dl{font-size:15px;font-weight:500;color:var(--text)}
+.dcard.done .st{font-size:13px;color:var(--muted);display:block;font-weight:400}
+.dcard.miss .st{color:var(--warn)}
+.dcard.done button{background:none;color:var(--accent);font-weight:600;font-size:14px;padding:6px 8px;flex:none}
+.dsetup{background:var(--surface);border-radius:16px;padding:16px;margin-top:8px}
+.dsetup h2{font-size:18px;margin:0 0 6px}
+.dsetup ol{margin:8px 0 12px;padding-left:20px;font-size:15px;line-height:1.5;color:var(--muted)}
+.dfoot{position:sticky;bottom:0;background:var(--bg);padding:12px 0 calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);margin-top:20px}
 .next-b .cat .n{font-weight:500}
 .next-b .irow:last-child{border-bottom:0}
 .store{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -367,7 +390,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.10-0930';
+const APP_VERSION = '2026.10.10-1423';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -440,7 +463,7 @@ const state = {
   filter: localStorage_get('filter') || 'drive', view: localStorage_get('view') || 'rayon', showDone:false, edit:false,
   addCh: localStorage_get('addch') || 'drive', showNext:null, justAdded:null,
   email: localStorage_get('email') || '', mode:'login', err:'', busy:false,
-  draft:null, wiz:null,
+  draft:null, wiz:null, drive:false, settings:{}, driveDone:false,
   proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[]
 };
 function localStorage_get(k){ try{ return localStorage.getItem('ar_'+k); }catch{ return null; } }
@@ -551,6 +574,7 @@ function render(){
   else if(state.member===null){ app.innerHTML='<div class="empty">Chargement…</div>'; }
   else if(state.rev){ app.innerHTML=renderReview(); bindReview(); }
   else if(state.wiz){ app.innerHTML=renderWizard(); bindWizard(); }
+  else if(state.drive){ app.innerHTML=renderDrive(); bindDrive(); }
   else {
     const t=state.tab;
     const body = t==='semaine'?renderSemaine(): t==='courses'?renderCourses(): t==='reglages'?renderReglages(): renderHome();
@@ -709,7 +733,11 @@ function renderCourses(){
   if(w) h+=`<div class="subh"><span>Semaine du ${esc(rangeLabel(w))}${driveOrdered(w)?` · ${esc(orderedLabel(w))}`:''}</span>${state.weeks.length>1?`<span class="grow"></span>${weekNav()}`:''}</div>`;
   h+='<main>';
   const tDrive=targetWeek('drive');
-  if(w && tDrive && tDrive.id===w.id) h+=`<div class="status">${ic('car')}<span><b>Commande drive pas encore passée</b>Tout ce que vous ajoutez part sur la liste de cette semaine.</span></div>`;
+  if(w && tDrive && tDrive.id===w.id){
+    h+=`<div class="status">${ic('car')}<span><b>Commande drive pas encore passée</b>Tout ce que vous ajoutez part sur la liste de cette semaine.</span></div>`;
+    const dl=driveList(); if(dl.length){ const n=dl.filter(i=>i.drive_cart).length;
+      h+=`<button class="drivego" id="drivego">${ic('bag')}<span class="grow"><b>Remplir le panier Leclerc</b>${n?`${n} sur ${dl.length} articles faits`:`${dl.length} articles, un par un, avec le produit conseillé`}</span>${ic('right','s')}</button>`; }
+  }
   // Il manque… (avec Drive / Grand Frais)
   const ch=state.addCh, tw=targetWeek(ch);
   h+=`<section class="manque"><label for="mq">Il manque quelque chose ?</label>
@@ -836,11 +864,118 @@ function renderReglages(){
     <label class="l" for="newname">Ajouter quelqu'un</label>
     <div class="row"><input id="newname" placeholder="Prénom" style="max-width:38%"><input id="newmail" type="email" inputmode="email" class="grow" placeholder="email"></div>
     <button class="primary btn" id="addmember" style="width:100%;margin-top:10px">Ajouter au foyer</button>
+    <h2 class="cat" style="margin-top:28px">Drive Leclerc</h2>
+    <p class="small" style="margin:4px 0 0">${driveBase()?`Magasin : <b style="color:var(--text)">${esc(driveStore())}</b>. Collez une autre adresse pour changer.`:'Collez l\'adresse d\'une page de votre drive (elle contient « leclercdrive.fr/magasin-… ») pour les liens de recherche du mode Drive.'}</p>
+    <div class="row" style="margin-top:8px"><input id="drurl" class="grow" type="url" inputmode="url" placeholder="https://fd…-courses.leclercdrive.fr/magasin-…" autocomplete="off"><button class="addbtn" id="drsave" aria-label="Enregistrer l'adresse du drive">${ic('check')}</button></div>
     <h2 class="cat" style="margin-top:28px">Compte</h2>
     <p class="small">Tu es connecté${FOYER.maman&&moi()===FOYER.maman?'e':''} en tant que ${esc(moi())} (${esc(state.session.user.email)}).</p>
     <button id="logout" class="outline btn" style="width:100%">Se déconnecter</button>
     <p class="small center" style="margin-top:28px">Chez ${esc(FOYER.nom)} · version ${APP_VERSION}<br>Le thème sombre suit le réglage du téléphone.</p>
   </main>`;
+}
+
+// ---------- Mode Drive ----------
+// Solution de secours au pilotage de Chrome par Claude (bloqué par Leclerc le 2026-10-10) : Claude prépare la liste
+// (drive_product = produit conseillé, drive_query = mots à chercher), le foyer remplit le panier lui-même.
+// Chaque article : « Chercher » ouvre la recherche sur le drive, puis « Dans le panier » ou « Pas trouvé » (drive_cart).
+// « Commande validée » pose weeks.drive_ordered_at ; ce qui n'est pas au panier part sur la prochaine liste.
+function driveBase(){ const m=String(state.settings.leclerc_drive_url||'').match(/^https:\/\/[^\/?#]*leclercdrive\.fr\/magasin-[^\/?#]+/i); return m?m[0]:null; }
+function driveStore(){ const b=driveBase(); if(!b) return ''; const m=b.match(/magasin-\d+-(.+)$/i); return m?decodeURIComponent(m[1]).replace(/-/g,' '):b.replace(/^https:\/\//,''); }
+function driveSearch(it){ const q=(it.drive_query||it.drive_product||it.label).trim(); return driveBase()+'/recherche.aspx?TexteRecherche='+encodeURIComponent(q).replace(/%20/g,'+'); }
+function driveList(){ return state.items.filter(i=>i.channel==='drive' && i.status==='a_acheter'); }
+function catRank(it){ const i=CAT_ORDER.indexOf(it.category||'autre'); return i<0?99:i; }
+function renderDrive(){
+  const w=curWeek(), all=driveList().sort((a,b)=>catRank(a)-catRank(b)||a.label.localeCompare(b.label));
+  const todo=all.filter(i=>!i.drive_cart), done=all.filter(i=>i.drive_cart);
+  let h=`<header class="top"><div class="row"><button class="iconbtn" id="drback" aria-label="Retour aux courses">${ic('left','s')}</button><h1>Panier Leclerc</h1></div></header>`;
+  if(w) h+=`<div class="subh"><span>Semaine du ${esc(rangeLabel(w))}${driveBase()?' · '+esc(driveStore()):''}</span></div>`;
+  h+='<main>';
+  if(!driveBase()) return h+`<section class="dsetup"><h2>D'abord, l'adresse de votre drive</h2>
+    <ol><li>Ouvrez votre drive Leclerc dans le navigateur, connecté à votre compte.</li><li>Copiez l'adresse de la page (elle contient « leclercdrive.fr/magasin-… »).</li><li>Collez-la ici : c'est à faire une seule fois.</li></ol>
+    <div class="row"><input id="drurl" class="grow" type="url" inputmode="url" placeholder="https://fd…-courses.leclercdrive.fr/magasin-…" autocomplete="off"><button class="addbtn" id="drsave" aria-label="Enregistrer l'adresse du drive">${ic('check')}</button></div></section></main>`;
+  if(w && driveOrdered(w)) return h+`<div class="empty"><b>Commande drive passée</b><br>Ce que vous ajoutez au Drive va maintenant sur la prochaine liste.</div></main>`;
+  if(!all.length) return h+`<div class="empty">Rien à mettre au panier Drive cette semaine.</div></main>`;
+  h+=`<div class="sub"><b style="color:var(--text)">${done.length}</b> sur ${all.length} articles faits</div><div class="prog"><i style="width:${Math.round(done.length/all.length*100)}%"></i></div>`;
+  h+=`<p class="noted">« Chercher » ouvre la recherche sur votre drive. Ajoutez le produit au panier, revenez ici et touchez « Dans le panier ».</p>`;
+  let cat=null;
+  for(const it of todo){
+    if(it.category!==cat){ cat=it.category; h+=`<h2 class="cat">${esc(CATS[cat||'autre']||'Autre')}</h2>`; }
+    const uses=itemMeals(it);
+    h+=`<section class="dcard" aria-label="${esc(it.label)}"><div class="dh"><span class="dl">${esc(it.label)}</span>${it.qty?`<span class="dq">${esc(it.qty)}</span>`:''}</div>
+      ${it.drive_product?`<div class="dp">Conseillé : <b>${esc(it.drive_product)}</b></div>`:''}
+      ${uses.length?`<div class="dp">Pour ${esc(uses.map(l=>whenShort(l.meal).toLowerCase()+' ('+shortTitle(l.meal.title)+')').join(', '))}</div>`:''}
+      <div class="da"><a class="btn outline" href="${esc(driveSearch(it))}" target="_blank" rel="noopener">Chercher${ic('ext','s')}</a>
+      <button class="btn primary" data-dcart="${it.id}" data-v="mis">${ic('check','s')}Dans le panier</button>
+      <button class="dmiss" data-dcart="${it.id}" data-v="introuvable">Pas trouvé sur le drive</button></div></section>`;
+  }
+  if(!todo.length) h+=`<div class="empty" style="padding-top:28px"><b>Tout est traité !</b><br>Vérifiez le panier sur Leclerc, choisissez le créneau et validez la commande là-bas.</div>`;
+  if(done.length){
+    h+=`<button class="donebar" id="drshowdone" aria-expanded="${state.driveDone}"><span class="cb">${ic('check','xs')}</span><span class="grow">${done.length===1?'1 article fait':done.length+' articles faits'}</span>${ic(state.driveDone?'up':'down','s')}</button>`;
+    if(state.driveDone) h+=done.map(it=>`<div class="dcard done ${it.drive_cart==='introuvable'?'miss':''}"><span class="dl grow">${esc(it.label)}<span class="st">${it.drive_cart==='mis'?'Dans le panier':'Pas trouvé · ira sur la prochaine liste'}${it.qty?' · '+esc(it.qty):''}</span></span>
+      ${it.drive_cart==='introuvable'?`<button data-dgf="${it.id}">Chez ${esc(FOYER.magasin)}</button>`:''}<button data-dcart="${it.id}" data-v="">Annuler</button></div>`).join('');
+  }
+  h+=`<div class="dfoot"><button class="btn big ${todo.length?'outline':'primary'}" id="drorder" style="width:100%">J'ai validé la commande sur Leclerc</button></div>`;
+  return h+'</main>';
+}
+function bindDrive(){
+  $('#drback').onclick=()=>{ state.drive=false; render(); window.scrollTo(0,0); };
+  bindDriveUrl();
+  const sd=$('#drshowdone'); if(sd) sd.onclick=()=>{ state.driveDone=!state.driveDone; render(); };
+  document.querySelectorAll('[data-dcart]').forEach(b=>b.onclick=async()=>{
+    const it=state.items.find(i=>i.id===b.dataset.dcart); if(!it) return;
+    const prev=it.drive_cart, v=b.dataset.v||null; it.drive_cart=v; render();
+    const {error}=await sb.from('shopping_items').update({drive_cart:v}).eq('id',it.id);
+    if(error){ it.drive_cart=prev; toast('Erreur : '+error.message); render(); return; }
+    if(v==='mis') snack(`« ${it.label} » dans le panier`, 'Annuler', async()=>{ it.drive_cart=null; render(); await sb.from('shopping_items').update({drive_cart:null}).eq('id',it.id); }, 3500);
+  });
+  document.querySelectorAll('[data-dgf]').forEach(b=>b.onclick=async()=>{
+    const it=state.items.find(i=>i.id===b.dataset.dgf); if(!it) return;
+    const t=targetWeek('magasin'), patch={channel:'magasin', drive_cart:null, week_id:t?t.id:it.week_id};
+    const {error}=await sb.from('shopping_items').update(patch).eq('id',it.id);
+    if(error){ toast('Erreur : '+error.message); return; }
+    Object.assign(it,patch); if(patch.week_id!==curWeek()?.id) state.items=state.items.filter(i=>i.id!==it.id);
+    render(); toast(`« ${it.label} » passe chez ${FOYER.magasin}`);
+  });
+  const od=$('#drorder'); if(od) od.onclick=openDriveOrder;
+}
+function bindDriveUrl(){
+  const go=$('#drsave'); if(!go) return;
+  const save=async()=>{
+    const url=$('#drurl').value.trim();
+    if(!/^https:\/\/[^\/?#]*leclercdrive\.fr\/magasin-[^\/?#]+/i.test(url)){ toast('Il faut une adresse qui contient « leclercdrive.fr/magasin-… »'); return; }
+    const {error}=await sb.from('foyer_settings').upsert({key:'leclerc_drive_url', value:url, updated_at:new Date().toISOString(), updated_by:state.session.user.email},{onConflict:'key'});
+    if(error){ toast('Erreur : '+error.message); return; }
+    state.settings.leclerc_drive_url=url; render(); toast('Adresse du drive enregistrée');
+  };
+  go.onclick=save; $('#drurl').onkeydown=e=>{ if(e.key==='Enter') save(); };
+}
+// Commande validée : date de commande sur la semaine, le reste du Drive part sur la prochaine liste, trace pour Claude.
+function openDriveOrder(){
+  const w=curWeek(); if(!w) return;
+  const all=driveList(), unmarked=all.filter(i=>!i.drive_cart), mis=all.filter(i=>i.drive_cart==='mis'), rest=all.filter(i=>i.drive_cart!=='mis');
+  openSheet(`<div class="grab"></div><div class="sheet-h"><div><h2 id="dot">Commande validée ?</h2><div class="sub">${mis.length} article${mis.length>1?'s':''} mis au panier depuis l'app.</div></div>${closeBtn}</div>
+    ${rest.length?`<p class="noted" style="margin-top:4px">Ces articles ne sont pas dans le panier : ils passeront sur <b>la prochaine liste</b>.</p>
+      <div>${rest.map(i=>`<div class="oth"><span class="nm grow">${esc(i.label)}</span><span class="q">${i.drive_cart==='introuvable'?'pas trouvé':esc(i.qty||'')}</span></div>`).join('')}</div>`
+      :`<p class="noted" style="margin-top:4px">Tout ce qui était prévu est dans le panier.</p>`}
+    <p class="noted">Ensuite, ce que vous ajoutez au Drive dans l'app ira sur la prochaine liste. ${esc(FOYER.magasin)} reste sur la liste de cette semaine.</p>
+    <div class="foot" style="margin-top:16px"><button class="btn big primary" id="dook" style="width:100%">Oui, la commande est passée</button>
+    ${unmarked.length?`<button class="btn outline" id="doall" style="width:100%">Ils sont dans le panier, je n'ai pas coché</button>`:''}</div>`);
+  const btns=()=>document.querySelectorAll('#dook,#doall');
+  $('#dook').onclick=()=>confirmDriveOrder(w, all, false, btns);
+  const da=$('#doall'); if(da) da.onclick=()=>confirmDriveOrder(w, all, true, btns);
+}
+async function confirmDriveOrder(w, all, allIn, btns){
+  btns().forEach(b=>b.disabled=true);
+  const mis=all.filter(i=>i.drive_cart==='mis' || (allIn && !i.drive_cart)), rest=all.filter(i=>!mis.includes(i));
+  if(allIn){ const ids=all.filter(i=>!i.drive_cart).map(i=>i.id); const {error}=await sb.from('shopping_items').update({drive_cart:'mis'}).in('id',ids); if(error){ toast('Erreur : '+error.message); btns().forEach(b=>b.disabled=false); return; } }
+  const now=new Date().toISOString();
+  if(rest.length){ const {error}=await sb.from('shopping_items').update({week_id:null, drive_cart:null}).in('id',rest.map(i=>i.id)); if(error){ toast('Erreur : '+error.message); btns().forEach(b=>b.disabled=false); return; } }
+  const {error}=await sb.from('weeks').update({drive_ordered_at:now}).eq('id',w.id);
+  if(error){ toast('Erreur : '+error.message); btns().forEach(b=>b.disabled=false); return; }
+  const row=i=>({label:i.label, qty:i.qty||null, produit:i.drive_product||null});
+  await sb.from('feedback_log').insert({week_id:w.id, kind:'panier_leclerc', content:{source:'app', par:state.session.user.email,
+    mis:mis.map(row), non_trouves:rest.filter(i=>i.drive_cart==='introuvable').map(row), reportes:rest.filter(i=>i.drive_cart!=='introuvable').map(row)}});
+  w.drive_ordered_at=now; closeSheet(); state.drive=false; await loadWeekData(); toast('Commande notée, merci !');
 }
 
 // ---------- Feuilles ----------
@@ -1096,6 +1231,7 @@ function bindMain(){
   document.querySelectorAll('[data-swap]').forEach(b=>b.onclick=()=>openSwap(b.dataset.swap));
   document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>rateMeal(b.dataset.id, b.dataset.rate));
   const em=$('#editmode'); if(em) em.onclick=()=>{ state.edit=!state.edit; render(); };
+  const dg=$('#drivego'); if(dg) dg.onclick=()=>{ state.drive=true; render(); window.scrollTo(0,0); };
   const sd=$('#showdone'); if(sd) sd.onclick=()=>{ state.showDone=!state.showDone; render(); };
   document.querySelectorAll('[data-addch]').forEach(b=>b.onclick=()=>{ state.addCh=b.dataset.addch; localStorage_set('addch',state.addCh); render(); });
   const nt=$('#nexttoggle'); if(nt) nt.onclick=()=>{ state.showNext=!(state.showNext ?? !targetWeek('drive')); render(); };
@@ -1118,6 +1254,7 @@ function bindMain(){
     else { const h=state.household.find(x=>x.label===label); await addItem(label, h?.channel||'drive', h); }
   });
   const lo=$('#logout'); if(lo) lo.onclick=()=>sb.auth.signOut();
+  bindDriveUrl();
   const am=$('#addmember'); if(am) am.onclick=async()=>{
     const email=$('#newmail').value.trim().toLowerCase(); if(!email) return;
     const display_name=$('#newname').value.trim()||null; const {error}=await sb.from('members').insert({email, display_name});
@@ -1526,10 +1663,12 @@ async function validateMenu(){
 
 // ---------- Données ----------
 async function loadStatic(){
-  const [{data:members},{data:household}] = await Promise.all([
+  const [{data:members},{data:household},{data:settings}] = await Promise.all([
     sb.from('members').select('*').order('added_at'),
-    sb.from('household_items').select('*').eq('active',true).order('label')
+    sb.from('household_items').select('*').eq('active',true).order('label'),
+    sb.from('foyer_settings').select('key,value')
   ]);
+  state.settings=Object.fromEntries((settings||[]).map(r=>[r.key,r.value]));
   state.members=members||[]; state.household=(household||[]).filter(x=>!x.placard); state.placard=(household||[]).filter(x=>x.placard);
 }
 async function loadWeeks(){
