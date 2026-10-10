@@ -229,8 +229,8 @@ main{padding:8px 20px 28px;max-width:640px;margin:0 auto}
 .dfoot{position:sticky;bottom:0;background:var(--bg);padding:12px 0 calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);margin-top:20px}
 .next-b .cat .n{font-weight:500}
 .next-b .irow:last-child{border-bottom:0}
-.store{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.store button{min-height:56px;border-radius:14px;background:var(--bg);border:1px solid var(--line2);font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.store{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.store button{min-height:64px;border-radius:14px;background:var(--bg);border:1px solid var(--line2);font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;padding:6px 4px}
 .store button[aria-checked="true"]{background:var(--accent-soft);color:var(--accent-soft-text);border:2px solid var(--accent)}
 div.l{font-size:14px;color:var(--muted);margin:12px 0 6px}
 .donebar{width:100%;display:flex;align-items:center;gap:12px;margin-top:14px;padding:0 14px;min-height:52px;background:var(--surface);text-align:left;font-weight:600;font-size:15px}
@@ -396,7 +396,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.10-1644';
+const APP_VERSION = '2026.10.10-1702';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -412,6 +412,7 @@ const FOYER = {
   maman: 'Audrey',
   enfants: ['Cassandre','Achille'],
   magasin: 'Grand Frais',         // le magasin pour les fruits et légumes
+  boucher: 'Boucher',             // la viande (reference.md, section 5)
 };
 const KIND = { recette:'Recette', assemblage:'Vite fait', commande:'On commande', restes:'Restes', exterieur:'On mange dehors', libre:'Libre' };
 const SPORT = { mar:'soir', ven:'soir', sam:'midi' };   // sport des enfants (reference.md, section 2)
@@ -444,6 +445,7 @@ const ICONS = {
   x:'<path d="M6 6l12 12M18 6L6 18"/>',
   edit:'<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
   trash:'<path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13"/>',
+  knife:'<path d="M4 13.5L14.5 3l4.5 4.5-7 7z"/><path d="M12 14.5l-6.5 6.5-2-2 3-3"/><circle cx="15.5" cy="7.5" r=".6"/>',
   car:'<path d="M4 16.5V12l2-5h12l2 5v4.5"/><path d="M3.5 12h17v4.5h-17z"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="16.5" cy="18.5" r="1.5"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
   alert:'<path d="M12 4l9 16H3L12 4z"/><path d="M12 10v4M12 17.5v.01"/>',
@@ -725,11 +727,13 @@ function driveOrdered(w){ return !!(w && (w.drive_ordered_at || ['courses_faites
 function liveWeek(){ const t=todayIso(); return state.weeks.find(w=>w.week_start<=t && addDays(w.week_start,6)>=t) || null; }
 function upcomingWeeks(){ const t=todayIso(); return state.weeks.filter(w=>addDays(w.week_start,6)>=t).sort((a,b)=>a.week_start.localeCompare(b.week_start)); }
 function targetWeek(ch){
-  if(ch==='magasin') return liveWeek() || upcomingWeeks()[0] || null;
+  if(ch!=='drive') return liveWeek() || upcomingWeeks()[0] || null;   // Grand Frais, boucher : la semaine en cours
   return upcomingWeeks().find(w=>!driveOrdered(w)) || null;
 }
 function targetLabel(w){ return !w ? 'la prochaine liste' : w===liveWeek() ? 'la liste de cette semaine' : `la liste de la semaine du ${fmtDate(w.week_start)}`; }
-function chName(ch){ return ch==='magasin' ? FOYER.magasin : 'Drive'; }
+const CHANNELS = ['drive','magasin','boucher'];
+function chName(ch){ return ch==='magasin' ? FOYER.magasin : ch==='boucher' ? FOYER.boucher : 'Drive'; }
+function chIcon(ch){ return ch==='drive' ? 'car' : ch==='boucher' ? 'knife' : 'bag'; }
 function orderedLabel(w){ if(!w.drive_ordered_at) return 'Commande drive passée'; const d=new Date(w.drive_ordered_at); return `Commande drive passée ${DAYS[(d.getDay()+6)%7].toLowerCase()} ${d.getDate()}`; }
 
 function renderCourses(){
@@ -749,8 +753,8 @@ function renderCourses(){
   const ch=state.addCh, tw=targetWeek(ch);
   h+=`<section class="manque"><label for="mq">Il manque quelque chose ?</label>
     <div class="row"><input id="mq" class="grow" placeholder="Beurre, éponges, sacs poubelle…" autocomplete="off" enterkeyhint="done"><button class="addbtn" id="mqadd" aria-label="Ajouter">${ic('plus')}</button></div>
-    <div class="seg tight" role="group" aria-label="Où l'acheter">${['drive','magasin'].map(c=>`<button data-addch="${c}" class="${ch===c?'on':''}" aria-pressed="${ch===c}">${esc(chName(c))}</button>`).join('')}</div>
-    <p class="noted">${ch==='drive'&&!tw?'Commande drive passée : ira sur <b>la prochaine liste</b>.':`Ira sur <b>${esc(targetLabel(tw))}</b>${ch==='magasin'?' (chez '+esc(FOYER.magasin)+')':' (Drive)'}.`}</p>`;
+    <div class="seg tight" role="group" aria-label="Où l'acheter">${CHANNELS.map(c=>`<button data-addch="${c}" class="${ch===c?'on':''}" aria-pressed="${ch===c}">${esc(chName(c))}</button>`).join('')}</div>
+    <p class="noted">${ch==='drive'&&!tw?'Commande drive passée : ira sur <b>la prochaine liste</b>.':`Ira sur <b>${esc(targetLabel(tw))}</b>${ch==='drive'?' (Drive)':' (chez '+esc(chName(ch))+')'}.`}</p>`;
   if(state.household.length) h+=`<div class="chips" aria-label="Les classiques de la maison">${state.household.map(x=>{ const on=pendingFor(x.label); return `<button data-hh="${esc(x.label)}" class="${on?'on':''}" aria-pressed="${!!on}">${esc(x.label)}</button>`; }).join('')}</div>`;
   h+=`</section>`;
   h+=renderNext();
@@ -762,10 +766,10 @@ function renderCourses(){
   if(all.length) h+=`<div class="find" role="search">${ic('search','s')}<input id="find" type="search" value="${esc(state.q)}" placeholder="Chercher dans la liste…" aria-label="Chercher dans la liste" autocomplete="off" enterkeyhint="search">${state.q?`<button class="clr" id="findclr" aria-label="Effacer la recherche">${ic('x','s')}</button>`:''}</div>`;
   if(state.q.trim()) return h+renderFound(all)+'</main>';
   if(linked) h+=`<div class="seg" role="group" aria-label="Classer la liste">${[['rayon','Par rayon'],['repas','Par repas']].map(([v,l])=>`<button data-view="${v}" class="${(byMeal?'repas':'rayon')===v?'on':''}" aria-pressed="${(byMeal?'repas':'rayon')===v}">${l}</button>`).join('')}</div>`;
-  h+=`<div class="seg${linked?' after':''}" role="group" aria-label="Filtrer par magasin">${['drive','magasin','tout'].map(f=>`<button data-filter="${f}" class="${state.filter===f?'on':''}" aria-pressed="${state.filter===f}">${{drive:'Drive',magasin:esc(FOYER.magasin),tout:'Tout'}[f]}${f!=='tout'?` <span class="n">${left(f)}</span>`:''}</button>`).join('')}</div>`;
+  h+=`<div class="seg${linked?' after':''}" role="group" aria-label="Filtrer par magasin">${[...CHANNELS,'tout'].map(f=>`<button data-filter="${f}" class="${state.filter===f?'on':''}" aria-pressed="${state.filter===f}">${f==='tout'?'Tout':esc(chName(f))}${f!=='tout'?` <span class="n">${left(f)}</span>`:''}</button>`).join('')}</div>`;
   let items=state.filter==='tout'?all:all.filter(i=>i.channel===state.filter);
   const todo=items.filter(i=>i.status==='a_acheter'), done=items.filter(i=>i.status==='achete');
-  if(!items.length) h+=`<div class="empty">Rien à prendre ${state.filter==='magasin'?'chez '+esc(FOYER.magasin):state.filter==='drive'?'au drive':''} cette semaine.</div>`;
+  if(!items.length) h+=`<div class="empty">Rien à prendre ${state.filter==='drive'?'au drive':state.filter==='tout'?'':'chez '+esc(chName(state.filter))} cette semaine.</div>`;
   else if(!todo.length) h+=`<div class="empty"><b>Tout est pris, bravo !</b></div>`;
   if(byMeal) return h+renderByMeal(items)+'</main>';
   const groups={}; for(const it of todo){ (groups[it.category||'autre'] ||= []).push(it); }
@@ -802,7 +806,7 @@ function markQ(label){
 }
 // un article déjà prévu (a_acheter) là où irait cet ajout
 function pendingFor(label){
-  const l=label.toLowerCase(); const ids=new Set([targetWeek('drive')?.id, targetWeek('magasin')?.id].filter(Boolean));
+  const l=label.toLowerCase(); const ids=new Set(CHANNELS.map(c=>targetWeek(c)?.id).filter(Boolean));
   return [...state.backlog, ...state.items].find(i=>i.status==='a_acheter' && i.label.toLowerCase()===l && (i.week_id==null || ids.has(i.week_id)));
 }
 // La prochaine liste : bien en vue, ouverte d'office une fois la commande drive passée
@@ -815,7 +819,7 @@ function renderNext(){
   if(open){
     h+='<div class="next-b">';
     if(!n) h+=`<p class="noted" style="margin:6px 0 10px">Rien pour l'instant. Ce que vous ajoutez au Drive arrivera ici, et Claude le reprendra pour la prochaine commande.</p>`;
-    for(const c of ['drive','magasin']){
+    for(const c of CHANNELS){
       const xs=bl.filter(i=>(i.channel||'drive')===c); if(!xs.length) continue;
       h+=`<h3 class="cat">${esc(chName(c))} <span class="n">· ${xs.length}</span></h3>`+xs.map(it=>`<div class="irow"><div class="item"><span class="lab">${esc(it.label)}<span class="by">${esc([it.qty, it.added_by?'noté par '+prenom(it.added_by):''].filter(Boolean).join(' · '))}</span></span></div>${editBtns(it)}</div>`).join('');
     }
@@ -1024,14 +1028,14 @@ function openEditSheet(id){
   const where=()=>{
     if(it.status!=='a_acheter' || ch===(it.channel||'drive')) return `Sur ${esc(here())}.`;
     const t=targetWeek(ch);
-    return ch==='magasin' ? `Passe chez ${esc(FOYER.magasin)}, sur ${esc(targetLabel(t))}.` : t ? `Passe au Drive, sur ${esc(targetLabel(t))}.` : 'Passe au Drive, sur la prochaine liste (la commande de cette semaine est passée).';
+    return ch!=='drive' ? `Passe chez ${esc(chName(ch))}, sur ${esc(targetLabel(t))}.` : t ? `Passe au Drive, sur ${esc(targetLabel(t))}.` : 'Passe au Drive, sur la prochaine liste (la commande de cette semaine est passée).';
   };
   openSheet(`<div class="grab"></div><div class="sheet-h"><h2 id="edt">Modifier l'article</h2>${closeBtn}</div>
     <label class="l" for="el" style="margin-top:0">Article</label><input id="el" value="${esc(it.label)}" autocomplete="off">
     <div class="two"><div><label class="l" for="eq">Quantité</label><input id="eq" value="${esc(it.qty||'')}" placeholder="optionnel"></div>
       <div><label class="l" for="ec">Rayon</label><select id="ec">${CAT_ORDER.map(c=>`<option value="${c}" ${c===(it.category||'autre')?'selected':''}>${CATS[c]}</option>`).join('')}</select></div></div>
     <div class="l" id="ewl">Où l'acheter</div>
-    <div class="store" role="radiogroup" aria-labelledby="ewl">${['drive','magasin'].map(c=>`<button role="radio" data-ech="${c}" aria-checked="${ch===c}">${ic(c==='drive'?'car':'bag')}${esc(chName(c))}</button>`).join('')}</div>
+    <div class="store" role="radiogroup" aria-labelledby="ewl">${CHANNELS.map(c=>`<button role="radio" data-ech="${c}" aria-checked="${ch===c}">${ic(chIcon(c))}${esc(chName(c))}</button>`).join('')}</div>
     <p class="noted" id="ewhere">${where()}</p>
     <div class="foot" style="margin-top:16px"><button id="eok" class="primary btn big">Enregistrer</button>
       <button id="edel" class="btn" style="background:none;color:var(--danger)">${ic('trash','s')} Supprimer l'article</button></div>`);
