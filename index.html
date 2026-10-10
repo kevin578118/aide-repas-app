@@ -135,6 +135,12 @@ main{padding:8px 20px 28px;max-width:640px;margin:0 auto}
 /* Courses */
 .prog{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:8px 0 0}
 .prog i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.find{position:relative;margin:14px 0 4px}
+.find>.i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.find input{padding-left:42px;padding-right:46px;background:var(--surface);border-color:transparent}
+.find input::-webkit-search-cancel-button{display:none}
+.find .clr{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:transparent;min-height:40px;min-width:40px;padding:0;color:var(--muted);display:grid;place-items:center}
+.lab mark{background:color-mix(in srgb,var(--accent) 25%,transparent);color:inherit;border-radius:3px}
 .manque{background:var(--surface);border-radius:16px;padding:14px;margin-top:12px}
 .manque label{font-size:15px;font-weight:600;display:block;margin-bottom:10px}
 .addbtn{width:48px;height:48px;flex:none;padding:0;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);border-radius:12px}
@@ -390,7 +396,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.10-1631';
+const APP_VERSION = '2026.10.10-1641';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -428,6 +434,7 @@ const ICONS = {
   sport:'<path d="M3 12h4l3-7 4 14 3-7h4"/>',
   cloud:'<path d="M7 18a4.5 4.5 0 1 1 1.3-8.8A6 6 0 0 1 19.4 11.8 3.2 3.2 0 0 1 18.3 18H7z"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   book:'<path d="M5 4.5h10.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h10.5"/>',
   link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
@@ -460,7 +467,7 @@ const state = {
   session:null, member:null, tab: initialTab(), prevTab:'accueil',
   weeks:[], weekIdx:0, meals:[], items:[], backlog:[], household:[], placard:[], members:[],
   near:[], dishes:[], feedback:[], swapMarks:{},
-  filter: localStorage_get('filter') || 'drive', view: localStorage_get('view') || 'rayon', showDone:false, edit:false,
+  filter: localStorage_get('filter') || 'drive', view: localStorage_get('view') || 'rayon', showDone:false, edit:false, q:'',
   addCh: localStorage_get('addch') || 'drive', showNext:null, justAdded:null,
   email: localStorage_get('email') || '', mode:'login', err:'', busy:false,
   draft:null, wiz:null, drive:false, settings:{}, driveDone:false,
@@ -473,7 +480,7 @@ function initialTab(){
   const t=localStorage_get('tab'), at=Number(localStorage_get('tab_at')||0);
   return (['accueil','semaine','courses'].includes(t) && Date.now()-at < 30*60*1000) ? t : 'accueil';
 }
-function setTab(t){ if(t!=='reglages') state.prevTab=t; state.tab=t; state.edit=false; localStorage_set('tab',t); localStorage_set('tab_at',String(Date.now())); render(); window.scrollTo(0,0); }
+function setTab(t){ if(t!=='reglages') state.prevTab=t; state.tab=t; state.edit=false; state.q=''; localStorage_set('tab',t); localStorage_set('tab_at',String(Date.now())); render(); window.scrollTo(0,0); }
 
 const $ = (s)=>document.querySelector(s);
 const esc = (s)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -752,6 +759,8 @@ function renderCourses(){
   // Drive / magasin / tout
   const left=(c)=>all.filter(i=>i.status==='a_acheter' && (c==='tout'||i.channel===c)).length;
   const linked=all.some(i=>itemMeals(i).length), byMeal=linked && state.view==='repas';
+  if(all.length) h+=`<div class="find" role="search">${ic('search','s')}<input id="find" type="search" value="${esc(state.q)}" placeholder="Chercher dans la liste…" aria-label="Chercher dans la liste" autocomplete="off" enterkeyhint="search">${state.q?`<button class="clr" id="findclr" aria-label="Effacer la recherche">${ic('x','s')}</button>`:''}</div>`;
+  if(state.q.trim()) return h+renderFound(all)+'</main>';
   if(linked) h+=`<div class="seg" role="group" aria-label="Classer la liste">${[['rayon','Par rayon'],['repas','Par repas']].map(([v,l])=>`<button data-view="${v}" class="${(byMeal?'repas':'rayon')===v?'on':''}" aria-pressed="${(byMeal?'repas':'rayon')===v}">${l}</button>`).join('')}</div>`;
   h+=`<div class="seg${linked?' after':''}" role="group" aria-label="Filtrer par magasin">${['drive','magasin','tout'].map(f=>`<button data-filter="${f}" class="${state.filter===f?'on':''}" aria-pressed="${state.filter===f}">${{drive:'Drive',magasin:esc(FOYER.magasin),tout:'Tout'}[f]}${f!=='tout'?` <span class="n">${left(f)}</span>`:''}</button>`).join('')}</div>`;
   let items=state.filter==='tout'?all:all.filter(i=>i.channel===state.filter);
@@ -766,6 +775,30 @@ function renderCourses(){
     if(state.showDone) h+=done.map(renderItem).join('');
   }
   return h+'</main>';
+}
+// Recherche : tous magasins, articles pris compris ; sur le nom, la quantité et les repas liés, sans tenir compte des accents
+const fold=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function renderFound(all){
+  const words=fold(state.q).split(/\s+/).filter(Boolean);
+  const hay=it=>fold([it.label, it.qty, ...itemMeals(it).map(l=>l.meal.title)].join(' '));
+  const xs=all.filter(it=>{ const t=hay(it); return words.every(w=>t.includes(w)); });
+  if(!xs.length) return `<div class="empty">Rien qui corresponde à « ${esc(state.q.trim())} » dans cette liste.<br><span class="noted">Pour l'ajouter, utilisez « Il manque quelque chose ? » plus haut.</span></div>`;
+  const todo=xs.filter(i=>i.status==='a_acheter'), done=xs.filter(i=>i.status==='achete');
+  let h=`<p class="sub" aria-live="polite" style="margin:8px 0 0">${xs.length===1?'1 article trouvé':xs.length+' articles trouvés'}${todo.length&&done.length?` · ${done.length} déjà pris`:''}</p>`;
+  const groups={}; for(const it of todo){ (groups[it.category||'autre'] ||= []).push(it); }
+  for(const c of CAT_ORDER){ if(groups[c]) h+=`<h2 class="cat">${CATS[c]}</h2>`+groups[c].map(it=>renderItem(it,{all:true})).join(''); }
+  if(done.length) h+=`<h2 class="cat">Déjà pris</h2>`+done.map(it=>renderItem(it,{all:true})).join('');
+  return h;
+}
+function markQ(label){
+  const words=fold(state.q).split(/\s+/).filter(Boolean); if(!words.length) return esc(label);
+  // repère les passages trouvés sur le texte replié (même longueur que l'original pour le français courant)
+  const f=fold(label); if(f.length!==label.length) return esc(label);
+  const on=new Array(label.length).fill(false);
+  for(const w of words){ let i=f.indexOf(w); while(i>=0){ for(let k=i;k<i+w.length;k++) on[k]=true; i=f.indexOf(w,i+1); } }
+  let out='', open=false;
+  for(let k=0;k<label.length;k++){ if(on[k]!==open){ out+=on[k]?'<mark>':'</mark>'; open=on[k]; } out+=esc(label[k]); }
+  return out+(open?'</mark>':'');
 }
 // un article déjà prévu (a_acheter) là où irait cet ajout
 function pendingFor(label){
@@ -795,11 +828,11 @@ function editBtns(it){
 }
 function renderItem(it, o={}){
   const d=it.status==='achete';
-  const sub=[o.also, state.filter==='tout'?chName(it.channel):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null].filter(Boolean).join(' · ');
+  const sub=[o.also, (o.all||state.filter==='tout')?chName(it.channel):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null].filter(Boolean).join(' · ');
   const qty=o.q ?? it.qty, uses=(o.noChips||d)?[]:itemMeals(it);
   return `<div class="irow ${state.justAdded===it.id?'new':''}"><button class="item ${d?'done':''}" data-item="${it.id}" aria-pressed="${d}">
     <span class="cb">${d?ic('check','xs'):''}</span>
-    <span class="lab">${esc(it.label)}${sub?`<span class="by">${esc(sub)}</span>`:''}</span>
+    <span class="lab">${state.q?markQ(it.label):esc(it.label)}${sub?`<span class="by">${esc(sub)}</span>`:''}</span>
     ${qty?`<span class="q">${esc(qty)}</span>`:''}
   </button>${state.edit?editBtns(it):''}${uses.length?`<div class="uses">${uses.map(l=>`<button class="use ${l.meal.url?'rec':''}" data-usemeal="${l.meal.id}" data-useitem="${it.id}" aria-label="${esc(it.label)} pour ${esc(l.meal.title)}, ${esc(whenLong(l.meal))}">${l.meal.url?ic('book','xs'):''}<b>${esc(whenShort(l.meal))}</b><span class="t">${esc(shortTitle(l.meal.title))}</span></button>`).join('')}</div>`:''}</div>`;
 }
@@ -1244,6 +1277,11 @@ function bindMain(){
     if(error){ toast('Erreur : '+error.message); await loadWeekData(); }
   });
   document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delItem(b.dataset.del));
+  const fd=$('#find'); if(fd){
+    fd.oninput=()=>{ state.q=fd.value; render(); };
+    fd.onkeydown=e=>{ if(e.key==='Escape'){ state.q=''; render(); } else if(e.key==='Enter') fd.blur(); };
+    const fc=$('#findclr'); if(fc) fc.onclick=()=>{ state.q=''; render(); $('#find')?.focus(); };
+  }
   const mq=$('#mq'); if(mq){
     const add=async()=>{ const label=mq.value.trim(); if(!label) return; mq.value=''; await addItem(label, state.addCh); $('#mq')?.focus(); };
     $('#mqadd').onclick=add; mq.onkeydown=e=>{ if(e.key==='Enter') add(); };
