@@ -107,6 +107,15 @@ main{padding:8px 20px 28px;max-width:640px;margin:0 auto}
 .sect-h h3{margin:0;font-size:15px;font-weight:600;color:var(--muted)}
 .link{color:var(--accent);font-weight:600;font-size:14px;background:none;padding:0 2px}
 .next-t{font-size:18px;font-weight:600;line-height:1.25;margin:2px 0 8px}
+.seg.home{margin:2px 0 18px}
+.eyebrow.later{color:var(--muted)}
+.prepbox{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border-radius:14px;padding:14px;margin-top:14px;font-size:15px;line-height:1.4}
+.prepbox svg.i{color:var(--accent);margin-top:-1px}
+.prepbox b{display:block;font-weight:600;font-size:16px}
+.btn.inkb{background:var(--ink);color:var(--on-ink)}
+.advance h3{margin:0;font-size:17px;font-weight:600}
+.advance .chips{margin-top:12px}
+.advance .chips button{min-height:44px;padding:6px 14px;font-size:15px}
 .box{background:var(--surface);border-radius:16px;padding:16px;margin-top:24px}
 .box h3{margin:0 0 2px;font-size:16px;font-weight:600}
 .trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
@@ -288,9 +297,46 @@ div.l{font-size:14px;color:var(--muted);margin:12px 0 6px}
 .donebar .cb{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .donebar .grow{flex:1}
 
+/* Inventaire du placard : OK / Bas / Fini, à racheter, bientôt fini, rangement après les courses */
+main.inv{padding-top:4px}
+.ibox{border:1px solid var(--line);border-radius:16px;padding:14px 16px 12px;margin-top:8px}
+.ibox h2{margin:0;font-size:17px;font-weight:600}
+.tbrow{display:flex;align-items:center;gap:12px;min-height:48px;padding:4px 0;font-weight:500}
+.tbrow>svg.i{color:var(--accent)}
+.tbrow .ghost{min-height:40px;font-size:14px;padding:6px 4px}
+.sdot{width:10px;height:10px;border-radius:5px;flex:none}
+.sdot.bas{border:2px solid var(--warn)}
+.sdot.fini{background:var(--danger)}
+.box h3.row{gap:8px}
+.box h3 svg.i{color:var(--accent)}
+.guess{display:flex;align-items:center;gap:8px;padding-top:12px}
+.guess b{font-weight:600}
+button.sm{min-height:40px;padding:0 12px;font-size:14px;border-radius:10px;flex:none}
+.outline.sm{background:var(--bg)}
+.wbtn{border-color:var(--warn);color:var(--warn)}
+.pl-g{margin:26px 0 2px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pl-row{display:flex;align-items:center;gap:10px;min-height:58px;padding:4px 0;border-bottom:1px solid var(--line)}
+.pl-row .an{font-weight:500}
+.stk{display:flex;gap:4px;flex:none}
+.stk button{min-height:40px;min-width:50px;padding:0 8px;border-radius:10px;border:1px solid var(--line2);background:var(--bg);color:var(--muted);font-size:14px;font-weight:500}
+.stk button[aria-pressed="true"][data-s="ok"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-soft-text);font-weight:600}
+.stk button[aria-pressed="true"][data-s="bas"]{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--bg));color:var(--warn);font-weight:600}
+.stk button[aria-pressed="true"][data-s="fini"]{border-color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,var(--bg));color:var(--danger);font-weight:600}
+.strow{width:100%;display:flex;align-items:center;gap:12px;padding:8px 0;min-height:56px;background:none;border-radius:0;border-bottom:1px solid var(--line);text-align:left;font-weight:500}
+.strow[aria-checked="true"] .ck{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.strow .sto{font-size:13px;color:var(--muted);flex:none}
+.strow .stmiss{font-size:13px;color:var(--danger);font-weight:600;flex:none}
+.rayon.due{padding-bottom:12px}
+.rayon.due .guess{padding-top:6px}
+.cook-in>#cmiss{align-self:stretch}
+/* depuis le mode cuisine, les feuilles et messages passent devant */
+body.cooking .sheet-bg{z-index:42}
+body.cooking .sheet{z-index:43}
+body.cooking .snack{z-index:44;bottom:calc(20px + env(safe-area-inset-bottom))}
+
 /* Barre d'onglets */
-nav.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--line);display:flex;padding:6px 12px max(env(safe-area-inset-bottom),8px);z-index:5}
-nav.tabs button{flex:1;background:none;border-radius:0;padding:6px 4px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;min-height:52px;font-weight:500}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--line);display:flex;padding:6px 4px max(env(safe-area-inset-bottom),8px);z-index:5}
+nav.tabs button{flex:1;min-width:0;white-space:nowrap;background:none;border-radius:0;padding:6px 2px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;min-height:52px;font-weight:500}
 nav.tabs button.on{color:var(--accent);font-weight:600}
 nav.tabs .ico{position:relative;display:inline-flex}
 .badge{position:absolute;top:-5px;left:15px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:var(--on-accent);font-size:11px;font-weight:700;line-height:18px;text-align:center}
@@ -447,7 +493,8 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.10-2044';
+const APP_VERSION = '2026.10.10-2104';
+const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -518,6 +565,8 @@ const ICONS = {
   leaf:'<path d="M5 19c0-8 5-13.5 14-14 0 9-5.2 14-13 14"/><path d="M5 19l7.5-7.5"/>',
   milk:'<path d="M8.5 3h7v3l2.5 3.5V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V9.5L8.5 6z"/><path d="M6 10h12"/>',
   jar:'<rect x="5.5" y="8" width="13" height="13" rx="3"/><path d="M8 3.5h8V8H8zM9 14h6"/>',
+  moon:'<path d="M19.5 14.5A7.5 7.5 0 1 1 9.5 4.5a6 6 0 0 0 10 10z"/>',
+  flame:'<path d="M12 3.5c1 3 5 5 5 9.5a5 5 0 0 1-10 0c0-2 1-3.2 2-4 0 1.8 1 2.8 2 2.8 0-3-1-5.6 1-8.3z"/>',
   flake:'<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/>',
   bread:'<path d="M5 11a4 4 0 0 1 2-7.5h10A4 4 0 0 1 19 11v8a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19z"/>',
   cup:'<path d="M6 4h12l-1.5 16h-9z"/><path d="M6.5 9h11"/>',
@@ -531,7 +580,7 @@ const ic = (n, c='') => `<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="tr
 const state = {
   session:null, member:null, tab: initialTab(), prevTab:'accueil',
   weeks:[], weekIdx:0, meals:[], items:[], backlog:[], household:[], placard:[], members:[],
-  near:[], dishes:[], feedback:[], swapMarks:{},
+  near:[], dishes:[], feedback:[], swapMarks:{}, push:null, homeAlt:null,
   filter: localStorage_get('filter') || 'drive', view: localStorage_get('view') || 'rayon', q:'', findOpen:false,
   showNext:false, justAdded:null,
   email: localStorage_get('email') || '', mode:'login', err:'', busy:false,
@@ -543,7 +592,7 @@ function localStorage_set(k,v){ try{ localStorage.setItem('ar_'+k, v); }catch{} 
 // Au lancement : l'accueil (prochain repas), sauf si on vient de quitter l'app il y a moins de 30 min.
 function initialTab(){
   const t=localStorage_get('tab'), at=Number(localStorage_get('tab_at')||0);
-  return (['accueil','semaine','courses'].includes(t) && Date.now()-at < 30*60*1000) ? t : 'accueil';
+  return (['accueil','semaine','courses','inventaire'].includes(t) && Date.now()-at < 30*60*1000) ? t : 'accueil';
 }
 function setTab(t){ if(t!=='reglages') state.prevTab=t; state.tab=t; state.findOpen=false; state.q=''; localStorage_set('tab',t); localStorage_set('tab_at',String(Date.now())); render(); window.scrollTo(0,0); }
 
@@ -633,6 +682,29 @@ function tagHtml(c, sm){
 function nearMeals(){ const ids=new Set(state.weeks.map(w=>w.id)); return state.near.filter(m=>ids.has(m.week_id)).sort(mealSort); }
 function isRated(m){ return state.feedback.some(f=>f.content?.meal_id===m.id); }
 function canRate(m){ return RATEABLE.includes(m.kind) && m.day>=addDays(todayIso(),-2) && !isRated(m); }
+// Préparé en avance (meals.prepared_at, reheat_minutes, reheat_note) : visible par tout le foyer.
+function isPrepared(m){ return !!m?.prepared_at; }
+function hourLabel(ts){ const d=new Date(ts), mn=d.getMinutes(); return d.getHours()+' h'+(mn?' '+String(mn).padStart(2,'0'):''); }
+function preparedLabel(m){
+  const day=toIso(new Date(m.prepared_at)), t=todayIso();
+  return 'Préparé '+(day===t?'':day===addDays(t,-1)?'hier ':`le ${fmtDate(day)} `)+'à '+hourLabel(m.prepared_at);
+}
+function reheatHtml(m){
+  const r=m.reheat_minutes||0;
+  return `<div class="prepbox">${ic('flame')}<span><b>${r?`Plus qu'à réchauffer, ${r} min`:'Rien à réchauffer, c\'est prêt'}</b>${m.reheat_note?`<span class="sub">${esc(m.reheat_note)}</span>`:''}</span></div>`;
+}
+async function setPrepared(m, row){
+  const {error}=await sb.from('meals').update(row).eq('id',m.id);
+  if(error){ toast('Erreur : '+error.message); return false; }
+  applyLocal([{id:m.id,...row}]); return true;
+}
+async function unprepare(id){
+  const m=findMeal(id); if(!m) return;
+  const before={prepared_at:m.prepared_at, prepared_by:m.prepared_by??null, reheat_minutes:m.reheat_minutes??null, reheat_note:m.reheat_note??null};
+  if(!await setPrepared(m, {prepared_at:null, prepared_by:null, reheat_minutes:null, reheat_note:null})) return;
+  render();
+  snack('Préparation annulée', 'Rétablir', async()=>{ if(await setPrepared(m, before)) render(); });
+}
 
 // ---------- Rendu ----------
 function render(){
@@ -649,10 +721,10 @@ function render(){
   else if(state.drive){ app.innerHTML=renderDrive(); bindDrive(); }
   else {
     const t=state.tab;
-    const body = t==='semaine'?renderSemaine(): t==='courses'?renderCourses(): t==='reglages'?renderReglages(): renderHome();
+    const body = t==='semaine'?renderSemaine(): t==='courses'?renderCourses(): t==='inventaire'?renderInventaire(): t==='reglages'?renderReglages(): renderHome();
     nav = t!=='reglages';
     app.innerHTML = body + (nav ? `<nav class="tabs" aria-label="Navigation principale">
-      ${tabBtn('accueil','cloche','Prochain repas')}${tabBtn('semaine','cal','Semaine')}${tabBtn('courses','bag','Courses', coursesLeft())}
+      ${tabBtn('accueil','cloche','Prochain repas')}${tabBtn('semaine','cal','Semaine')}${tabBtn('courses','bag','Courses', coursesLeft())}${tabBtn('inventaire','jar','Inventaire', toStow().length)}
     </nav>` : '');
     bindMain();
   }
@@ -718,22 +790,36 @@ function renderHome(){
     h+=`<div class="empty"><b>Rien de prévu pour l'instant.</b><br>${state.draft?'La semaine est préparée : le menu arrive dès que Claude l\'a fait.':`Préparez la semaine ici, puis ${esc(FOYER.papa)} lance Claude sur le Mac.`}</div>`;
     h+=prepBanner(true);
   } else {
-    const ctx=ctxOf(next), cons=constraints(next.day,next.slot,ctx), evs=(ctx.events||[]).filter(e=>e.day===next.day);
-    const cooking=cookSaved(next.id);
+    // Le repas d'après (ce soir, le plus souvent) peut se préparer en avance : bascule entre les deux.
+    const alt=after && !NO_COOK.includes(after.kind) ? after : null, showAlt=!!alt && state.homeAlt===alt.id;
+    const cur=showAlt?alt:next, prepared=isPrepared(cur);
+    const ctx=ctxOf(cur), cons=constraints(cur.day,cur.slot,ctx), evs=(ctx.events||[]).filter(e=>e.day===cur.day);
+    const cooking=cookSaved(cur.id, showAlt?'avance':prepared?'rechauffe':'cuisine');
+    let main='';
+    if(showAlt) main = prepared ? '' : `<button class="primary btn big" data-cook="${cur.id}" data-mode="avance">${ic('pot')}${cooking?'Préparer en avance · minuteur en cours':'Préparer en avance'}</button>`;
+    else if(prepared) main = cur.reheat_minutes ? `<button class="primary btn big" data-cook="${cur.id}" data-mode="rechauffe">${ic('flame')}${cooking?'Réchauffer · minuteur en cours':`Réchauffer · minuteur ${cur.reheat_minutes} min`}</button>` : '';
+    else if(!NO_COOK.includes(cur.kind)) main = `<button class="primary btn big" data-cook="${cur.id}">${ic('pot')}${cooking?'Mode cuisine · minuteur en cours':'Mode cuisine'}</button>`;
     h+=`<section class="hero" aria-labelledby="nexttitle">
-      <div class="eyebrow">${ic('cloche','s')}<span>Prochain repas · ${esc(whenLabel(next))}</span></div>
-      <h2 id="nexttitle">${esc(next.title)}</h2>
-      <div class="tags">${next.prep_minutes?`<span class="tag">${ic('clock','s')}${next.prep_minutes} min</span>`:''}<span class="tag">${esc(kindLabel(next))}</span>${cons.map(c=>tagHtml(c)).join('')}${evs.map(e=>tagHtml({kind:'event',label:e.label})).join('')}</div>
-      ${next.notes?`<p class="note">${esc(next.notes)}</p>`:''}
+      ${alt?`<div class="seg home" role="group" aria-label="Repas affiché">
+        <button class="${showAlt?'':'on'}" aria-pressed="${!showAlt}" data-home="">${esc(cap(whenLabel(next)))}</button>
+        <button class="${showAlt?'on':''}" aria-pressed="${showAlt}" data-home="${alt.id}">${esc(cap(whenLabel(alt)))}</button></div>`:''}
+      ${showAlt?`<div class="eyebrow later">${ic(alt.slot==='soir'?'moon':'clock','s')}<span>${esc(cap(whenLabel(alt)))} · ${prepared?'déjà préparé':'à préparer en avance'}</span></div>`
+        :`<div class="eyebrow">${ic('cloche','s')}<span>Prochain repas · ${esc(whenLabel(cur))}</span></div>`}
+      <h2 id="nexttitle">${esc(cur.title)}</h2>
+      <div class="tags">${prepared?`<span class="tag ok">${ic('check','s')}${esc(preparedLabel(cur))}</span>`:''}${cur.prep_minutes&&!prepared?`<span class="tag">${ic('clock','s')}${cur.prep_minutes} min</span>`:''}<span class="tag">${esc(kindLabel(cur))}</span>${cons.map(c=>tagHtml(c)).join('')}${evs.map(e=>tagHtml({kind:'event',label:e.label})).join('')}</div>
+      ${prepared?reheatHtml(cur):''}
+      ${cur.notes?`<p class="note">${esc(cur.notes)}</p>`:''}
+      ${showAlt&&!prepared?`<p class="note">Préparé maintenant, il n'y aura plus qu'à le réchauffer ${esc(whenLabel(cur))}.</p>`:''}
       <div class="actions">
-        ${NO_COOK.includes(next.kind)?'':`<button class="primary btn big" data-cook="${next.id}">${ic('pot')}${cooking?'Mode cuisine · minuteur en cours':'Mode cuisine'}</button>`}
-        <div class="two ${next.url?'':'one'}">
-          ${next.url?`<a class="btn outline" href="${esc(next.url)}" target="_blank" rel="noopener">Recette ${ic('ext','s')}</a>`:''}
-          <button class="btn outline" data-swap="${next.id}">${ic('swap','s')}Échanger</button>
+        ${main}
+        <div class="two ${cur.url?'':'one'}">
+          ${cur.url?`<a class="btn outline" href="${esc(cur.url)}" target="_blank" rel="noopener">Recette ${ic('ext','s')}</a>`:''}
+          <button class="btn outline" data-swap="${cur.id}">${ic('swap','s')}Échanger</button>
         </div>
+        ${prepared?`<button class="link center" style="min-height:44px" data-unprep="${cur.id}">Annuler « préparé »</button>`:''}
       </div>
     </section>`;
-    if(after){
+    if(after && !alt){
       const c2=constraints(after.day,after.slot,ctxOf(after));
       h+=`<section class="sect"><div class="sect-h"><h3>Ensuite · ${esc(whenLabel(after))}</h3><button class="link" data-tab="semaine">Toute la semaine</button></div>
         <div class="next-t">${esc(after.title)}</div>
@@ -817,8 +903,9 @@ function renderCourses(){
   h+=`<div class="stores" role="group" aria-label="Magasin">${CHANNELS.map(c=>{
     const xs=all.filter(i=>chOf(i)===c), left=xs.filter(i=>i.status==='a_acheter').length;
     return `<button data-filter="${c}" aria-pressed="${c===ch}">${ic(chIcon(c))}<b>${esc(chName(c))}</b><span>${left?left+' à prendre':xs.length?'tout est pris':'rien à prendre'}</span></button>`; }).join('')}</div>`;
+  h+=stowBanner();
   const prominent = ch==='drive' && !targetWeek('drive');   // commande drive passée : la prochaine liste d'abord
-  if(ch==='drive') h+=renderDriveHead(w);
+  if(ch==='drive') h+=renderDriveHead(w)+renderDue();
   if(prominent) h+=renderNext(true);
   if(!w) return h+`<div class="empty">Pas encore de liste de courses cette semaine.</div>`+(prominent?'':renderNext(false))+'</main>'+addBar();
   const items=all.filter(i=>chOf(i)===ch);
@@ -912,9 +999,10 @@ function mealsLine(it){
   const ls=itemMeals(it); if(!ls.length) return '';
   return ls.length===1 ? `${shortTitle(ls[0].meal.title)} · ${whenShort(ls[0].meal).toLowerCase()}` : ls.map(l=>whenShort(l.meal).toLowerCase()).join(', ');
 }
+function plNote(it){ const x=state.placard.find(p=>fold(p.label)===fold(it.label)); return 'inventaire'+(x&&stk(x)!=='ok'?' : '+STOCK[stk(x)].toLowerCase():'')+(it.added_by&&it.added_by!=='claude'?', noté par '+prenom(it.added_by):''); }
 function renderItem(it, o={}){
   const d=it.status==='achete';
-  const sub=[o.also ?? mealsLine(it), o.all?chName(chOf(it)):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null].filter(Boolean).join(' · ');
+  const sub=[o.also ?? mealsLine(it), o.all?chName(chOf(it)):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null, it.source==='placard'?plNote(it):null].filter(Boolean).join(' · ');
   const qty=o.q ?? it.qty;
   return swipeRow(it, `<button class="tick ${d?'got':''}" data-item="${it.id}" aria-pressed="${d}"><span class="ck">${d?ic('check','xs'):''}</span><span class="al"><span class="an">${state.q?markQ(it.label):esc(it.label)}</span>${sub?`<span class="am">${esc(sub)}</span>`:''}</span>${qty?`<span class="aq">${esc(qty)}</span>`:''}</button>`);
 }
@@ -946,8 +1034,8 @@ function bindSwipes(){
 }
 document.addEventListener('pointerdown',e=>{ if(!e.target.closest('.art.open')) document.querySelectorAll('.art.open').forEach(r=>r.classList.remove('open')); });
 // Feuille « Ajouter à la liste » : le magasin de l'onglet par défaut, la liste de destination, les doublons, les classiques
-function openAddSheet(){
-  let ch=curChannel();
+function openAddSheet(prefill){
+  let ch=typeof prefill==='string' ? 'drive' : curChannel();
   openSheet(`<div class="grab"></div><div class="sheet-h"><h2 id="addt">Ajouter à la liste</h2>${closeBtn}</div>
     <label class="l" for="mq" style="margin-top:0">Article</label>
     <div class="row"><input id="mq" class="grow" placeholder="Beurre, éponges, sacs poubelle…" autocomplete="off" enterkeyhint="done"><input id="mqq" aria-label="Quantité" placeholder="Qté" autocomplete="off" style="width:88px;flex:none"></div>
@@ -986,6 +1074,7 @@ function openAddSheet(){
   inp.oninput=refresh; go.onclick=add;
   inp.onkeydown=e=>{ if(e.key==='Enter') add(); };
   qq.onkeydown=e=>{ if(e.key==='Enter') add(); };
+  if(typeof prefill==='string') inp.value=prefill;
   refresh(); setTimeout(()=>inp.focus(), 60);
 }
 // Article ↔ repas (shopping_items.for_meals) : seulement les repas de la semaine affichée
@@ -1052,11 +1141,196 @@ function renderReglages(){
     <h2 class="cat" style="margin-top:28px">Drive Leclerc</h2>
     <p class="small" style="margin:4px 0 0">${driveBase()?`Magasin : <b style="color:var(--text)">${esc(driveStore())}</b>. Collez une autre adresse pour changer.`:'Collez l\'adresse d\'une page de votre drive (elle contient « leclercdrive.fr/magasin-… ») pour les liens de recherche du mode Drive.'}</p>
     <div class="row" style="margin-top:8px"><input id="drurl" class="grow" type="url" inputmode="url" placeholder="https://fd…-courses.leclercdrive.fr/magasin-…" autocomplete="off"><button class="addbtn" id="drsave" aria-label="Enregistrer l'adresse du drive">${ic('check')}</button></div>
+    <h2 class="cat" style="margin-top:28px">Notifications</h2>
+    <p class="small" style="margin:4px 0 10px">Un rappel le mercredi à 20 h 30 pour préparer la semaine suivante (s'il reste à faire), et un message quand quelqu'un d'autre échange deux repas.</p>
+    ${{
+      on:`<p class="small">${ic('check','xs')} Activées sur ce téléphone.</p><button class="outline btn" id="pushoff" style="width:100%">Désactiver sur ce téléphone</button>`,
+      off:`<button class="primary btn" id="pushon" style="width:100%">Activer sur ce téléphone</button>`,
+      denied:`<p class="small">Les notifications sont bloquées pour l'app : autorise-les dans les réglages du téléphone, puis reviens ici.</p>`,
+      install:`<p class="small">Sur iPhone, ajoute d'abord l'app à l'écran d'accueil (bouton Partager, puis « Sur l'écran d'accueil »), ouvre-la depuis l'icône et reviens ici.</p>`,
+      unsupported:`<p class="small">Ce navigateur ne gère pas les notifications.</p>`,
+    }[state.push]||''}
     <h2 class="cat" style="margin-top:28px">Compte</h2>
     <p class="small">Tu es connecté${FOYER.maman&&moi()===FOYER.maman?'e':''} en tant que ${esc(moi())} (${esc(state.session.user.email)}).</p>
     <button id="logout" class="outline btn" style="width:100%">Se déconnecter</button>
     <p class="small center" style="margin-top:28px">Chez ${esc(FOYER.nom)} · version ${APP_VERSION}<br>Le thème sombre suit le réglage du téléphone.</p>
   </main>`;
+}
+
+// ---------- Inventaire du placard ----------
+// Chaque fond de placard (household_items.placard) a un état : ok, bas ou fini (household_items.stock).
+// Bas ou fini → l'article va tout seul sur la liste (source 'placard', même règle Drive / Grand Frais que « Il manque ») ;
+// repasser en OK le retire s'il n'est pas encore pris. Après les courses, « Tout est rangé ? » repasse en OK ce qui a
+// été acheté. « Sans doute bientôt fini » : les fonds de placard du menu des 7 prochains jours (nom dans le titre du
+// repas) et ceux qui ont une fréquence d'achat dépassée, sauf s'ils ont été vérifiés il y a moins de 7 jours.
+const STOCK = { ok:'OK', bas:'Bas', fini:'Fini' };
+const stk = (x)=>x.stock||'ok';
+function placardGroups(){ return [...PLACARD_GROUPES, ...new Set(state.placard.map(x=>x.placard).filter(g=>!PLACARD_GROUPES.includes(g)))]; }
+// Mot-clé d'un fond de placard dans le titre d'un repas (« Riz » → « Saumon, riz et épinards »), au singulier, sans accents
+const KW_SKIP=['cubes','huile','vinaigre','fond','sauce','herbes','levure','concentre','ail'];
+function plKey(x){ const w=fold(x.label).split(/[\s'’]+/)[0]; return w.length>=3 && !KW_SKIP.includes(w) ? w.replace(/s$/,'') : null; }
+function usesPl(x, title){ const k=plKey(x); return !!k && fold(title).split(/[^a-z0-9]+/).some(t=>t.replace(/s$/,'')===k); }
+function daysAgo(iso){ return Math.floor((Date.now()-new Date(iso).getTime())/864e5); }
+function agoLabel(iso){ const n=daysAgo(iso); return n<=0?'aujourd\'hui':n===1?'hier':`il y a ${n} jours`; }
+// Un article est encore à prendre (pas pris, et pas dans une commande drive déjà passée)
+function stillToBuy(i){ return i.status==='a_acheter' && !(i.drive_cart==='mis' && driveOrdered(state.weeks.find(w=>w.id===i.week_id))); }
+function onList(label){ const l=fold(label); return [...state.items,...state.backlog].find(i=>stillToBuy(i) && fold(i.label)===l) || null; }
+function boughtAt(i){
+  if(i.status==='achete') return i.done_at||i.created_at;
+  const w=state.weeks.find(x=>x.id===i.week_id);
+  return i.status==='a_acheter' && i.drive_cart==='mis' && driveOrdered(w) ? (w.drive_ordered_at||i.created_at) : null;
+}
+// Après les courses : fonds de placard Bas / Fini dont l'article a été acheté (coché, ou au panier d'une commande passée) depuis
+function toStow(){
+  const all=[...state.items,...state.backlog];
+  return state.placard.filter(x=>stk(x)!=='ok' && !onList(x.label)).map(x=>{
+    const l=fold(x.label), i=all.find(i=>{ const b=boughtAt(i); return fold(i.label)===l && b && (!x.stock_at || new Date(b)>=new Date(x.stock_at)); });
+    return i?{x,i}:null; }).filter(Boolean);
+}
+function plGuesses(){
+  const t=todayIso(), soon=nearMeals().filter(m=>!isPast(m) && m.day<=addDays(t,7));
+  const out=[];
+  for(const x of state.placard){
+    if(stk(x)!=='ok' || (x.stock_at && daysAgo(x.stock_at)<7)) continue;
+    const ms=soon.filter(m=>usesPl(x,m.title));
+    if(ms.length) out.push({x, why: ms.length===1?`Au menu ${whenLabel(ms[0])} : ${shortTitle(ms[0].title)}`:`Dans ${ms.length} repas des 7 prochains jours`});
+    else if(x.frequency_weeks && x.last_bought && addDays(x.last_bought, x.frequency_weeks*7)<=addDays(t,3)) out.push({x, why:`Racheté toutes les ${x.frequency_weeks} semaines, la dernière fois le ${fmtDate(x.last_bought)}`});
+  }
+  return out.slice(0,4);
+}
+// Change l'état d'un fond de placard et tient la liste de courses à jour. o.silent : pas de message.
+async function setStock(x, s, o={}){
+  const prev=stk(x), prevAt=x.stock_at, now=new Date().toISOString(), by=state.session.user.email;
+  Object.assign(x,{stock:s, stock_at:now, stock_by:by}); render();
+  const {error}=await sb.from('household_items').update({stock:s, stock_at:now, stock_by:by}).eq('id',x.id);
+  if(error){ Object.assign(x,{stock:prev, stock_at:prevAt}); render(); toast('Erreur : '+error.message); return false; }
+  let msg;
+  if(s!=='ok'){
+    if(onList(x.label)) msg=`${x.label} : ${STOCK[s].toLowerCase()}, déjà sur la liste`;
+    else { const ch=x.channel||'drive', t=targetWeek(ch); if(!await addItem(x.label, ch, x, null, true, 'placard')) return false; msg=`${x.label} noté ${STOCK[s].toLowerCase()} · ajouté sur ${targetLabel(t)}`; }
+  } else {
+    const l=fold(x.label), ex=[...state.items,...state.backlog].find(i=>i.status==='a_acheter' && !i.drive_cart && i.source==='placard' && fold(i.label)===l);
+    if(ex){ const {error:e2}=await sb.from('shopping_items').delete().eq('id',ex.id); if(e2){ toast('Erreur : '+e2.message); return false; }
+      state.items=state.items.filter(i=>i.id!==ex.id); state.backlog=state.backlog.filter(i=>i.id!==ex.id); render(); msg=`${x.label} : OK, retiré de la liste`; }
+    else msg = prev==='ok' ? `${x.label} : il en reste, c'est noté` : `${x.label} : OK`;
+  }
+  if(!o.silent) snack(msg, prev!==s?'Annuler':null, async()=>{ if(await setStock(x, prev, {...o, silent:true})) toast('Annulé'); });
+  if(o.after) o.after();
+  return true;
+}
+function stockSeg(x, opts=['ok','bas','fini']){
+  return `<div class="stk" role="group" aria-label="${esc(x.label)}">${opts.map(s=>`<button data-stk="${x.id}" data-s="${s}" aria-pressed="${stk(x)===s}">${STOCK[s]}</button>`).join('')}</div>`;
+}
+function stowBanner(){
+  const n=toStow().length; if(!n) return '';
+  return `<button class="banner" id="stowgo" style="margin-top:8px">${ic('check')}<span><b>Courses rangées ?</b>${n===1?'1 article du placard acheté':n+' articles du placard achetés'} : mettez l'inventaire à jour.</span></button>`;
+}
+function renderInventaire(){
+  const P=state.placard, tb=P.filter(x=>stk(x)!=='ok').sort((a,b)=>(stk(a)==='fini'?0:1)-(stk(b)==='fini'?0:1) || a.label.localeCompare(b.label));
+  const last=P.map(x=>x.stock_at).filter(Boolean).sort().pop(), stow=toStow();
+  let h=`<header class="top"><div class="grow"><h1>Inventaire</h1><div class="date">${P.length} articles suivis${last?` · mis à jour ${agoLabel(last)}`:''}</div></div></header><main class="inv">`;
+  if(!P.length) return h+`<div class="empty"><b>Le placard est vide.</b><br>Ajoutez ci-dessous ce que vous avez toujours d'avance.</div>${plAddForm()}</main>`;
+  h+=stowBanner();
+  h+=`<section class="ibox" aria-labelledby="tbt"><div class="row"><h2 id="tbt" class="grow">À racheter</h2><span class="sub">${tb.length?(tb.length===1?'1 article':tb.length+' articles'):''}</span></div>`+
+    (tb.length?tb.map(x=>{ const on=onList(x.label), got=!on && stow.some(s=>s.x===x); return `<div class="tbrow"><span class="sdot ${stk(x)}" aria-hidden="true"></span><span class="grow">${esc(x.label)}<span class="am">${STOCK[stk(x)]} · ${esc(chName(x.channel||'drive'))}${on?` · ${on.week_id==null?'sur la prochaine liste':'sur la liste'}`:got?' · acheté, à ranger':''}</span></span>${on||got?ic('check','s'):`<button class="ghost" data-relist="${x.id}">Remettre sur la liste</button>`}</div>`; }).join('')
+      +`<p class="noted" style="margin-top:6px">Bas ou Fini : c'est déjà sur la liste de courses.</p>`
+    :`<p class="noted" style="margin-top:4px">Rien à racheter : le placard est plein.</p>`)+`</section>`;
+  const gs=plGuesses();
+  if(gs.length) h+=`<section class="box" style="margin-top:14px" aria-labelledby="gst"><h3 id="gst" class="row">${ic('clock','s')}Sans doute bientôt fini</h3><div class="sub">D'après le menu et les habitudes d'achat. Un coup d'œil suffit.</div>
+    ${gs.map(g=>`<div class="guess"><span class="grow"><b>${esc(g.x.label)}</b><span class="am" style="white-space:normal">${esc(g.why)}</span></span><button class="outline sm" data-stk="${g.x.id}" data-s="ok">Il en reste</button><button class="outline sm wbtn" data-stk="${g.x.id}" data-s="bas">Bas</button></div>`).join('')}</section>`;
+  for(const g of placardGroups()){
+    const xs=P.filter(x=>x.placard===g); if(!xs.length) continue;
+    h+=`<h2 class="pl-g">${esc(g)}</h2>`+xs.map(x=>`<div class="pl-row"><span class="grow"><span class="an">${esc(x.label)}</span><span class="am">${x.stock_at?`${stk(x)==='ok'?'OK':STOCK[stk(x)]} ${esc(agoLabel(x.stock_at))}${x.stock_by&&x.stock_by!==state.session.user.email?' · '+esc(prenom(x.stock_by)):''}`:'pas encore vérifié'}</span></span>${stockSeg(x)}</div>`).join('');
+  }
+  return h+plAddForm()+'</main>';
+}
+function plAddForm(){
+  return `<h2 class="pl-g">Ajouter au placard</h2><p class="noted" style="margin-top:0">Quelque chose que vous avez toujours d'avance et qui n'est pas dans la liste.</p>
+    <div class="row" style="margin-top:8px"><input id="pladd" class="grow" placeholder="ex. Curry, Lait de coco…" autocomplete="off" aria-label="Nouvel article du placard"><button class="addbtn" id="pladdgo" aria-label="Ajouter au placard">${ic('plus')}</button></div>
+    <select id="pladdg" aria-label="Groupe" style="margin-top:8px">${placardGroups().map(g=>`<option>${esc(g)}</option>`).join('')}</select>`;
+}
+function bindInventaire(){
+  document.querySelectorAll('#app [data-stk]').forEach(b=>b.onclick=()=>{ const x=state.placard.find(p=>p.id===b.dataset.stk); if(x) setStock(x, b.dataset.s); });
+  document.querySelectorAll('[data-relist]').forEach(b=>b.onclick=async()=>{ const x=state.placard.find(p=>p.id===b.dataset.relist); if(!x) return; const ch=x.channel||'drive', t=targetWeek(ch); if(await addItem(x.label, ch, x, null, true, 'placard')) toast(`${x.label} ajouté sur ${targetLabel(t)}`); });
+  const sg=$('#stowgo'); if(sg) sg.onclick=openStow;
+  const go=$('#pladdgo'); if(go){
+    const add=async()=>{ const label=$('#pladd').value.trim(); if(!label) return; const placard=$('#pladdg').value;
+      if(state.placard.some(x=>fold(x.label)===fold(label))){ toast(`${label} est déjà dans le placard`); return; }
+      const {error}=await sb.from('household_items').upsert({label, category:/crème|creme|gruy|beurre|lait|fromage/i.test(label)?'frais':'epicerie', channel:'drive', placard, active:true},{onConflict:'label'});
+      if(error){ toast('Erreur : '+error.message); return; }
+      await loadStatic(); render(); toast(`${label} ajouté au placard`); };
+    go.onclick=add; $('#pladd').onkeydown=e=>{ if(e.key==='Enter') add(); };
+  }
+}
+// « Tout est rangé ? » : ce qui a été acheté repasse en OK ; décoché = pas arrivé, repart sur la liste.
+function openStow(){
+  const xs=toStow(), keep=new Set(xs.map(s=>s.x.id));
+  const extra=state.placard.filter(x=>stk(x)!=='ok' && !keep.has(x.id)), plus=new Set();
+  const draw=()=>{
+    const s=$('#sheet'), y=s.scrollTop;
+    s.innerHTML=`<div class="grab"></div><div class="sheet-h"><div><h2 id="stt">Tout est rangé ?</h2><div class="sub">Ces articles du placard ont été achetés. Ils repassent en OK dans l'inventaire.</div></div>${closeBtn}</div>
+      <div role="group" aria-labelledby="stt">${xs.map(({x,i})=>{ const on=keep.has(x.id); return `<button class="strow" role="checkbox" aria-checked="${on}" data-sw="${x.id}"><span class="ck">${on?ic('check','xs'):''}</span><span class="grow">${esc(x.label)}<span class="am">${i.status==='achete'?'pris':'commandé au drive'}${i.done_at?' '+esc(agoLabel(i.done_at)):''}</span></span><span class="${on?'sto':'stmiss'}">${on?`${STOCK[stk(x)]} → OK`:'Pas arrivé'}</span></button>`; }).join('')}</div>
+      <div class="dupw" style="margin-top:12px">${ic('alert','s')}<span>Décochez ce qui n'est pas arrivé (rupture au drive) : il reste à racheter et repart sur la liste.</span></div>
+      ${extra.length?`<div class="l" style="margin-top:16px">Autre chose acheté en plus ?</div><div class="chips" style="margin-top:0">${extra.map(x=>`<button data-sx="${x.id}" class="${plus.has(x.id)?'on':''}" aria-pressed="${plus.has(x.id)}">${plus.has(x.id)?ic('check','xs'):''}${esc(x.label)}</button>`).join('')}</div>`:''}
+      <div class="foot" style="margin-top:18px"><button class="btn big primary" id="stok">Mettre l'inventaire à jour</button><button class="btn" id="stlater" style="background:none;color:var(--muted)">Plus tard</button></div>`;
+    s.scrollTop=y;
+    s.querySelector('[data-close]').onclick=closeSheet; s.querySelector('#stlater').onclick=closeSheet;
+    s.querySelectorAll('[data-sw]').forEach(b=>b.onclick=()=>{ const id=b.dataset.sw; keep.has(id)?keep.delete(id):keep.add(id); draw(); });
+    s.querySelectorAll('[data-sx]').forEach(b=>b.onclick=()=>{ const id=b.dataset.sx; plus.has(id)?plus.delete(id):plus.add(id); draw(); });
+    s.querySelector('#stok').onclick=async e=>{
+      e.target.disabled=true;
+      const ids=[...keep, ...plus], now=new Date().toISOString(), by=state.session.user.email;
+      if(ids.length){ const {error}=await sb.from('household_items').update({stock:'ok', stock_at:now, stock_by:by, last_bought:todayIso()}).in('id',ids);
+        if(error){ toast('Erreur : '+error.message); e.target.disabled=false; return; } }
+      // ce qui reste à racheter (« Il manque » d'un ajout fait après la commande, par exemple) n'est plus utile pour ce qui est rangé
+      for(const id of plus){ const x=state.placard.find(p=>p.id===id), ex=x&&onList(x.label); if(ex && ex.source==='placard' && !ex.drive_cart) await sb.from('shopping_items').delete().eq('id',ex.id); }
+      const missing=xs.filter(s=>!keep.has(s.x.id)).map(s=>s.x);
+      for(const x of missing) await addItem(x.label, x.channel||'drive', x, null, true, 'placard');
+      for(const id of ids){ const x=state.placard.find(p=>p.id===id); if(x) Object.assign(x,{stock:'ok', stock_at:now, stock_by:by, last_bought:todayIso()}); }
+      closeSheet(); await loadWeekData();
+      toast(ids.length?`Inventaire à jour${missing.length?` · ${missing.length===1?'1 article repart':missing.length+' articles repartent'} sur la liste`:''}`:'Rien n\'a changé');
+    };
+  };
+  openSheet('<div></div>'); draw();
+}
+// « Il manque quelque chose ? » depuis le mode cuisine : les fonds de placard du plat, puis la recherche dans le placard
+function openMissSheet(m){
+  const rec=m?state.placard.filter(x=>usesPl(x,m.title)):[];
+  openSheet(`<div class="grab"></div><div class="sheet-h"><div><h2 id="mst">Il manque quelque chose ?</h2><div class="sub">Un tap et c'est noté pour les prochaines courses.</div></div>${closeBtn}</div>
+    ${rec.length?`<div class="l" style="margin-top:0">Dans ce repas</div><div id="msrec"></div>`:''}
+    <label class="l" for="msq"${rec.length?'':' style="margin-top:0"'}>Dans le placard</label>
+    <div class="find" role="search" style="margin-top:0">${ic('search','s')}<input id="msq" type="search" placeholder="Sel, huile, sucre…" autocomplete="off" enterkeyhint="search"></div>
+    <div id="msres"></div>
+    <div class="foot" style="margin-top:16px"><button class="btn big outline" data-close>Retour ${m?'à la recette':''}</button></div>`);
+  const s=$('#sheet'), q=s.querySelector('#msq');
+  s.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeSheet);
+  const row=x=>`<div class="pl-row"><span class="grow an">${esc(x.label)}</span>${stockSeg(x,['bas','fini'])}</div>`;
+  const draw=()=>{
+    const r=s.querySelector('#msrec'); if(r) r.innerHTML=rec.map(row).join('');
+    const t=fold(q.value.trim()), found=t?state.placard.filter(x=>fold(x.label).includes(t)).slice(0,6):[];
+    s.querySelector('#msres').innerHTML = !t ? '' : found.length ? found.map(row).join('')
+      : `<p class="noted">« ${esc(q.value.trim())} » n'est pas dans le placard.</p><button class="btn outline" id="msadd" style="width:100%;margin-top:8px">${ic('plus','s')}L'ajouter à la liste de courses</button>`;
+    s.querySelectorAll('[data-stk]').forEach(b=>b.onclick=()=>{ const x=state.placard.find(p=>p.id===b.dataset.stk); if(!x) return;
+      // toucher l'état déjà choisi le remet à OK
+      setStock(x, stk(x)===b.dataset.s?'ok':b.dataset.s, {after:draw}); draw(); });
+    const a=s.querySelector('#msadd'); if(a) a.onclick=()=>openAddSheet(q.value.trim());
+  };
+  q.oninput=draw; draw();
+}
+// Courses : les articles récurrents dont la fréquence d'achat est dépassée et qui ne sont pas sur la liste
+function dueRecurring(){
+  const t=todayIso(); let ign={}; try{ ign=JSON.parse(localStorage_get('ignore')||'{}'); }catch{}
+  return [...state.household, ...state.placard.filter(x=>stk(x)==='ok')].filter(x=>x.frequency_weeks && x.last_bought
+    && addDays(x.last_bought, x.frequency_weeks*7)<=addDays(t,3) && !onList(x.label) && !(ign[x.label]>t)).slice(0,5);
+}
+function renderDue(){
+  const xs=dueRecurring(); if(!xs.length) return '';
+  return `<section class="rayon due" aria-labelledby="duet"><div class="rh"><span class="tile t-ma">${ic('clock','s')}</span><h2 id="duet">À ne pas oublier ?</h2></div>
+    ${xs.map(x=>`<div class="guess" style="padding:8px 16px"><span class="grow"><span class="an">${esc(x.label)}</span><span class="am" style="white-space:normal">Toutes les ${x.frequency_weeks} semaines, dernier achat le ${esc(fmtDate(x.last_bought))}</span></span><button class="outline sm" data-ign="${esc(x.label)}">Il en reste</button><button class="primary sm" data-due="${x.id}">Ajouter</button></div>`).join('')}</section>`;
+}
+function bindDue(){
+  document.querySelectorAll('#app [data-due]').forEach(b=>b.onclick=async()=>{ const x=[...state.household,...state.placard].find(p=>p.id===b.dataset.due); if(!x) return; const ch=x.channel||'drive', t=targetWeek(ch); if(await addItem(x.label, ch, x, null, true)) toast(`${x.label} ajouté sur ${targetLabel(t)}`); });
+  document.querySelectorAll('#app [data-ign]').forEach(b=>b.onclick=()=>{ let ign={}; try{ ign=JSON.parse(localStorage_get('ignore')||'{}'); }catch{} ign[b.dataset.ign]=addDays(todayIso(),7); localStorage_set('ignore', JSON.stringify(ign)); render(); });
 }
 
 // ---------- Mode Drive ----------
@@ -1245,7 +1519,8 @@ async function openSwap(id){
 }
 async function doSwap(a0, b0){
   const A={...a0}, B={...b0};
-  const content=m=>({title:m.title, kind:m.kind, url:m.url??null, prep_minutes:m.prep_minutes??null, notes:m.notes??null});
+  const content=m=>({title:m.title, kind:m.kind, url:m.url??null, prep_minutes:m.prep_minutes??null, notes:m.notes??null,
+    prepared_at:m.prepared_at??null, prepared_by:m.prepared_by??null, reheat_minutes:m.reheat_minutes??null, reheat_note:m.reheat_note??null});
   const slot=m=>({id:m.id, week_id:m.week_id, day:m.day, slot:m.slot});
   // Une seule requête : chaque créneau garde sa place, seul le contenu change (pas de conflit jour/créneau).
   const rows=[{...slot(A),...content(B)}, {...slot(B),...content(A)}];
@@ -1254,7 +1529,10 @@ async function doSwap(a0, b0){
   if(error){ toast('Échange impossible : '+error.message); return; }
   await swapLinks(A, B);
   applyLocal(rows); state.swapMarks[A.id]=slotName(B); state.swapMarks[B.id]=slotName(A); render();
+  // Les autres membres sont prévenus une fois le délai « Annuler » passé (rien n'est envoyé si on annule)
+  const notif=setTimeout(()=>sb.functions.invoke('notify',{body:{kind:'echange', a:A.id, b:B.id}}).catch(()=>{}), 6500);
   snack(`${cap(slotName(A))} et ${slotName(B)} échangés`, 'Annuler', async()=>{
+    clearTimeout(notif);
     const back=[{...slot(A),...content(A)}, {...slot(B),...content(B)}];
     const {error}=await sb.from('meals').upsert(back,{onConflict:'id'});
     if(error){ toast('Erreur : '+error.message); return; }
@@ -1293,22 +1571,28 @@ async function rateMeal(id, avis){
 }
 
 // ---------- Mode cuisine : minuteur + écran allumé ----------
-const cook={meal:null,total:0,endAt:0,left:0,running:false,done:false,lock:null,tick:null,ac:null};
-function cookSaved(id){ try{ const s=JSON.parse(localStorage_get('cook')||'null'); return s && s.id===id && s.running && s.endAt>Date.now(); }catch{ return false; } }
-function saveCook(){ localStorage_set('cook', JSON.stringify({id:cook.meal.id,total:cook.total,running:cook.running,endAt:cook.endAt,left:cook.left})); }
+// Trois modes : 'cuisine' (le prochain repas), 'avance' (préparer un repas plus tard), 'rechauffe' (repas déjà préparé).
+const cook={meal:null,mode:'cuisine',base:0,total:0,endAt:0,left:0,running:false,done:false,lock:null,tick:null,ac:null};
+function cookSaved(id, mode){ try{ const s=JSON.parse(localStorage_get('cook')||'null'); return s && s.id===id && (!mode || (s.mode||'cuisine')===mode) && s.running && s.endAt>Date.now(); }catch{ return false; } }
+function saveCook(){ localStorage_set('cook', JSON.stringify({id:cook.meal.id,mode:cook.mode,total:cook.total,running:cook.running,endAt:cook.endAt,left:cook.left})); }
 function cookLeft(){ return cook.running ? Math.max(0, Math.ceil((cook.endAt-Date.now())/1000)) : cook.left; }
-function openCook(id){
+function openCook(id, mode='cuisine'){
   const m=findMeal(id); if(!m) return;
   let s=null; try{ s=JSON.parse(localStorage_get('cook')||'null'); }catch{}
-  cook.meal=m; cook.done=false;
-  if(s && s.id===m.id){ Object.assign(cook,{total:s.total,running:s.running,endAt:s.endAt,left:s.left}); }
-  else { cook.total=(m.prep_minutes||15)*60; cook.left=cook.total; cook.running=false; cook.endAt=0; }
-  const d=dishFor(m), cons=constraints(m.day,m.slot,ctxOf(m));
+  cook.meal=m; cook.mode=mode; cook.done=false;
+  cook.base=(mode==='rechauffe' ? (m.reheat_minutes||10) : (m.prep_minutes||15))*60;
+  if(s && s.id===m.id && (s.mode||'cuisine')===mode){ Object.assign(cook,{total:s.total,running:s.running,endAt:s.endAt,left:s.left}); }
+  else { cook.total=cook.base; cook.left=cook.total; cook.running=false; cook.endAt=0; }
+  const d=dishFor(m), cons=constraints(m.day,m.slot,ctxOf(m)), when=whenLabel(m);
+  let reheat=m.reheat_minutes ?? 20;
+  const eyebrow = mode==='avance' ? `${ic(m.slot==='soir'?'moon':'clock','s')}<span>Pour ${esc(when)} · préparé en avance</span>`
+    : mode==='rechauffe' ? `${ic('flame','s')}<span>${esc(cap(when))} · à réchauffer</span>`
+    : `${ic('cloche','s')}<span>${esc(cap(when))}</span>`;
   const el=$('#cook');
   el.innerHTML=`<div class="cook-in">
     <div class="cook-top"><button class="iconbtn round" id="cclose" aria-label="Quitter le mode cuisine">${ic('x','s')}</button>
       <span class="pill" id="lockpill">${ic('sun','s')}<span id="locktxt">Écran…</span></span></div>
-    <div><div class="eyebrow">${ic('cloche','s')}<span>${esc(cap(whenLabel(m)))}</span></div><h2>${esc(m.title)}</h2></div>
+    <div><div class="eyebrow">${eyebrow}</div><h2>${esc(m.title)}</h2></div>
     <section class="timer" aria-label="Minuteur">
       <div class="trow"><span>Minuteur</span><span id="ttot"></span></div>
       <div class="tm" id="tm" role="timer"></div>
@@ -1317,13 +1601,33 @@ function openCook(id){
     </section>
     <section>
       ${d?.rating==='a_tester'?`<div class="kv"><span>Plan B</span><span><b>Des pâtes</b><span class="sub">Plat encore à tester avec ${esc(FOYER.enfants.join(' et '))}.</span></span></div>`:''}
+      ${mode==='rechauffe'?`<div class="kv"><span>Préparé</span><span><b>${esc(preparedLabel(m).replace(/^Préparé /,''))}</b>${m.prepared_by?`<span class="sub">par ${esc(prenom(m.prepared_by))}</span>`:''}</span></div>`:''}
+      ${mode==='rechauffe'&&m.reheat_note?`<div class="kv"><span>Réchauffer</span><span>${esc(m.reheat_note)}</span></div>`:''}
       ${m.notes?`<div class="kv"><span>Notes</span><span>${esc(m.notes)}</span></div>`:''}
       ${cons.length?`<div class="kv"><span>${m.slot==='midi'?'Ce midi':'Ce soir'}</span><span>${esc(cons.map(c=>c.label).join(' · '))}</span></div>`:''}
     </section>
     ${m.url?`<a class="btn big outline" href="${esc(m.url)}" target="_blank" rel="noopener">Ouvrir la recette ${ic('ext','s')}</a>`:''}
+    <button class="btn outline" id="cmiss">${ic('jar','s')}Il manque quelque chose ?</button>
+    ${mode==='avance'?`<section class="advance" aria-labelledby="advt"><h3 id="advt">${esc(cap(when))}, il faudra…</h3>
+      <div class="chips" role="radiogroup" aria-labelledby="advt">${[0,10,20,30].map(v=>`<button role="radio" aria-checked="${v===reheat}" class="${v===reheat?'on':''}" data-rh="${v}">${v?v+' min':'Rien, c\'est froid'}</button>`).join('')}</div>
+      <label class="l" for="rhnote">Consigne (facultatif)</label>
+      <input id="rhnote" type="text" maxlength="120" placeholder="Four 180 °C, couvert d'alu" value="${esc(m.reheat_note||'')}">
+    </section>
+    <button class="btn big inkb" id="advdone">${ic('check','s')}C'est prêt pour ${esc(when)}</button>`:''}
   </div>`;
-  el.classList.add('on'); document.body.style.overflow='hidden';
+  el.classList.add('on'); document.body.style.overflow='hidden'; document.body.classList.add('cooking');
+  $('#cmiss').onclick=()=>openMissSheet(m);
   $('#cclose').onclick=closeCook;
+  el.querySelectorAll('[data-rh]').forEach(b=>b.onclick=()=>{ reheat=Number(b.dataset.rh);
+    el.querySelectorAll('[data-rh]').forEach(x=>{ const on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-checked',on); }); });
+  const ad=$('#advdone'); if(ad) ad.onclick=async()=>{
+    ad.disabled=true;
+    const ok=await setPrepared(m, {prepared_at:new Date().toISOString(), prepared_by:state.session.user.email, reheat_minutes:reheat, reheat_note:$('#rhnote').value.trim()||null});
+    if(!ok){ ad.disabled=false; return; }
+    cook.meal=null; localStorage_set('cook','null');   // le minuteur de préparation ne sert plus
+    state.homeAlt=null; closeCook();
+    toast(reheat?`Noté : ${when}, plus qu'à réchauffer`:`Noté : ${when}, c'est prêt`);
+  };
   $('#tgo').onclick=()=>{ unlockAudio();
     if(cook.done){ cook.left=cook.total; cook.done=false; }
     if(cook.running){ cook.left=cookLeft(); cook.running=false; }
@@ -1336,7 +1640,7 @@ function openCook(id){
     else { cook.left+=60; cook.total+=60; }
     saveCook(); updateCook(true);
   };
-  $('#treset').onclick=()=>{ cook.running=false; cook.done=false; cook.total=(m.prep_minutes||15)*60; cook.left=cook.total; saveCook(); updateCook(true); };
+  $('#treset').onclick=()=>{ cook.running=false; cook.done=false; cook.total=cook.base; cook.left=cook.total; saveCook(); updateCook(true); };
   updateCook(true); clearInterval(cook.tick); cook.tick=setInterval(updateCook, 250);
   acquireLock();
 }
@@ -1344,7 +1648,7 @@ function closeCook(){
   clearInterval(cook.tick); cook.tick=null;
   if(cook.lock){ cook.lock.release().catch(()=>{}); cook.lock=null; }
   if(cook.meal) saveCook();
-  $('#cook').classList.remove('on'); document.body.style.overflow=''; render();
+  $('#cook').classList.remove('on'); document.body.style.overflow=''; document.body.classList.remove('cooking'); closeSheet(); render();
 }
 function fmtClock(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 function updateCook(force){
@@ -1412,12 +1716,15 @@ function bindMain(){
   document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{ state.filter=b.dataset.filter; localStorage_set('filter',state.filter); render(); });
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{ state.view=b.dataset.view; localStorage_set('view',state.view); render(); });
   document.querySelectorAll('[data-usemeal]').forEach(b=>b.onclick=()=>openMealUse(b.dataset.usemeal));
-  document.querySelectorAll('[data-cook]').forEach(b=>b.onclick=()=>openCook(b.dataset.cook));
+  document.querySelectorAll('[data-cook]').forEach(b=>b.onclick=()=>openCook(b.dataset.cook, b.dataset.mode));
+  document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>{ state.homeAlt=b.dataset.home||null; render(); });
+  document.querySelectorAll('[data-unprep]').forEach(b=>b.onclick=()=>unprepare(b.dataset.unprep));
   document.querySelectorAll('[data-swap]').forEach(b=>b.onclick=()=>openSwap(b.dataset.swap));
   document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>rateMeal(b.dataset.id, b.dataset.rate));
   const dg=$('#drivego'); if(dg) dg.onclick=()=>{ state.drive=true; render(); window.scrollTo(0,0); };
   const nt=$('#nexttoggle'); if(nt) nt.onclick=()=>{ state.showNext=!state.showNext; render(); };
-  const ao=$('#addopen'); if(ao) ao.onclick=openAddSheet;
+  const ao=$('#addopen'); if(ao) ao.onclick=()=>openAddSheet();
+  bindInventaire(); bindDue();
   const fb=$('#findbtn'); if(fb) fb.onclick=()=>{ const on=!(state.findOpen||state.q); state.findOpen=on; state.q=''; render(); if(on) $('#find')?.focus(); };
   bindSwipes();
   document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEditSheet(b.dataset.edit));
@@ -1434,7 +1741,9 @@ function bindMain(){
     fd.onkeydown=e=>{ if(e.key==='Escape'){ state.q=''; state.findOpen=false; render(); } else if(e.key==='Enter') fd.blur(); };
     const fc=$('#findclr'); if(fc) fc.onclick=()=>{ state.q=''; render(); $('#find')?.focus(); };
   }
-  const lo=$('#logout'); if(lo) lo.onclick=()=>sb.auth.signOut();
+  const lo=$('#logout'); if(lo) lo.onclick=async()=>{ if(state.push==='on') await pushOff(true); sb.auth.signOut(); };
+  const pon=$('#pushon'); if(pon) pon.onclick=pushOn;
+  const poff=$('#pushoff'); if(poff) poff.onclick=()=>pushOff();
   bindDriveUrl();
   const am=$('#addmember'); if(am) am.onclick=async()=>{
     const email=$('#newmail').value.trim().toLowerCase(); if(!email) return;
@@ -1444,9 +1753,9 @@ function bindMain(){
   };
 }
 // quiet : pas de message (la feuille d'ajout affiche le sien). Renvoie true si l'article est enregistré.
-async function addItem(label, ch, h, qty, quiet){
+async function addItem(label, ch, h, qty, quiet, source){
   const t=targetWeek(ch);
-  const {data,error}=await sb.from('shopping_items').insert({week_id:t?t.id:null,label,qty:qty||h?.default_qty||null,category:h?.category||guessCat(label),channel:ch,status:'a_acheter',source:h?'maison':'manque',added_by:state.session.user.email}).select('id');
+  const {data,error}=await sb.from('shopping_items').insert({week_id:t?t.id:null,label,qty:qty||h?.default_qty||null,category:h?.category||guessCat(label),channel:ch,status:'a_acheter',source:source||(h?'maison':'manque'),added_by:state.session.user.email}).select('id');
   if(error){ toast('Erreur : '+error.message); return false; }
   state.justAdded=data?.[0]?.id||null; if(!t) state.showNext=true;
   if(!quiet) toast(`Ajouté sur ${targetLabel(t)}`);
@@ -1492,9 +1801,11 @@ function openWizard(draft){
   render(); window.scrollTo(0,0);
 }
 const WIZ_STEPS=['Semaine','Audrey','Repas à prévoir','Événements','Envies','Courses','Placard','Récap'];
-// Tour du placard : fonds de placard (household_items.placard = groupe), on coche ce qui manque → context.placard_manque.
+// Tour du placard : l'inventaire (household_items.stock). Ce qui est Bas ou Fini est déjà coché et sur la liste ; toucher un
+// article le passe en Bas (et l'ajoute à la liste) ou le remet en OK. À l'enregistrement → context.placard_manque.
 const PLACARD_GROUPES=['Pâtes, riz et féculents','Frigo d\'avance','Conserves','Assaisonnement','Bouillons et sauces','Huiles et vinaigres','Épicerie de base'];
-const plHint=n=>(n?`<b>${n}</b> à racheter.`:'Rien ne manque ? Touchez Suivant.')+' Autre chose ? Ajoutez-le à l\'écran précédent, dans les besoins pour la maison.';
+const plHint=n=>(n?`<b>${n}</b> à racheter, déjà sur la liste de courses.`:'Rien ne manque ? Touchez Suivant.')+' Autre chose ? Ajoutez-le à l\'écran précédent, dans les besoins pour la maison.';
+const plManque=()=>state.placard.filter(x=>stk(x)!=='ok').map(x=>x.label);
 function seg(name,val,opts){ return `<div class="seg" data-seg="${name}">${opts.map(([v,l])=>`<button data-v="${v}" class="${val===v?'on':''}" aria-pressed="${val===v}">${l}</button>`).join('')}</div>`; }
 function renderWizard(){
   const z=state.wiz, c=z.ctx, n=WIZ_STEPS.length, s=z.step;
@@ -1533,9 +1844,9 @@ function renderWizard(){
       <label class="l" for="bm">Besoins pour la maison en plus de ce qui est déjà noté dans « Il manque »</label><textarea id="bm" placeholder="ex. lessive, piles, cadeau anniversaire">${esc(c.besoins_maison)}</textarea>
       <p class="hint">${state.backlog.length?`Déjà noté dans « Il manque » : ${state.backlog.map(b=>esc(b.label)).join(', ')}.`:'Rien dans « Il manque » pour l\'instant.'}</p>`;
   } else if(s===6){
-    const grp=[...PLACARD_GROUPES, ...new Set(state.placard.map(x=>x.placard).filter(g=>!PLACARD_GROUPES.includes(g)))];
-    body=`<h2>Le tour du placard</h2><p class="lead">On ne les rachète pas à chaque fois. Touchez ce qui manque ou va bientôt manquer.</p>`+
-      (state.placard.length?grp.map(g=>{ const it=state.placard.filter(x=>x.placard===g); return it.length?`<label class="l">${esc(g)}</label><div class="chips">${it.map(x=>{ const on=c.placard_manque.includes(x.label); return `<button data-pl="${esc(x.label)}" class="${on?'on':''}" aria-pressed="${on}">${esc(x.label)}</button>`; }).join('')}</div>`:''; }).join(''):'<div class="empty">La liste du placard est vide.</div>')+
+    c.placard_manque=plManque();
+    body=`<h2>Le tour du placard</h2><p class="lead">D'après l'inventaire. Ce qui est Bas ou Fini est déjà coché ; touchez ce qui manque en plus.</p>`+
+      (state.placard.length?placardGroups().map(g=>{ const it=state.placard.filter(x=>x.placard===g); return it.length?`<label class="l">${esc(g)}</label><div class="chips">${it.map(x=>{ const on=stk(x)!=='ok'; return `<button data-pl="${x.id}" class="${on?'on':''}" aria-pressed="${on}">${esc(x.label)}${stk(x)==='fini'?' · fini':''}</button>`; }).join('')}</div>`:''; }).join(''):'<div class="empty">La liste du placard est vide.</div>')+
       `<p class="hint" id="plhint">${plHint(c.placard_manque.length)}</p>`;
   } else {
     const pl=DK.map(k=>c.jours[k].audrey?`${DAYN[k].slice(0,3)} ${c.jours[k].audrey}`:null).filter(Boolean).join(' · ')||'non renseigné';
@@ -1582,7 +1893,7 @@ function bindWizard(){
     else if(name==='fl') c.fruits_legumes=v;
     if(name==='commande') render(); else sg.querySelectorAll('button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-pressed',x===b); });
   });
-  document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{ const l=b.dataset.pl, i=c.placard_manque.indexOf(l); if(i>=0) c.placard_manque.splice(i,1); else c.placard_manque.push(l); b.classList.toggle('on',i<0); b.setAttribute('aria-pressed',i<0); $('#plhint').innerHTML=plHint(c.placard_manque.length); });
+  document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{ const x=state.placard.find(p=>p.id===b.dataset.pl); if(x) setStock(x, stk(x)==='ok'?'bas':'ok', {silent:true}); });
   document.querySelectorAll('[data-qui]').forEach(b=>b.onclick=()=>{ const [k,slot,id]=b.dataset.qui.split(':'); const arr=c.jours[k][slot]; const i=arr.indexOf(id); if(i>=0) arr.splice(i,1); else arr.push(id); c.jours[k].custom=true; b.classList.toggle('on'); b.setAttribute('aria-pressed',b.classList.contains('on')); });
   const lg=$('#long'); if(lg) lg.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const k=b.dataset.k; c.cuisine_longue=c.cuisine_longue.includes(k)?c.cuisine_longue.filter(x=>x!==k):[...c.cuisine_longue,k]; b.classList.toggle('on'); b.setAttribute('aria-pressed',b.classList.contains('on')); };
   const ea=$('#evadd'); if(ea) ea.onclick=()=>{ collectWizard(); c.events.push({day:z.week_start,label:''}); render(); setTimeout(()=>{ const l=document.querySelectorAll('[data-evl]'); l[l.length-1]?.focus(); },50); };
@@ -1591,6 +1902,7 @@ function bindWizard(){
   const sv=$('#wsave'); if(sv) sv.onclick=async()=>{
     state.busy=true; render();
     const planning={}; for(const k of DK) if(c.jours[k].audrey) planning[k]=c.jours[k].audrey;
+    if(state.placard.length) c.placard_manque=plManque();
     const context=Object.assign({}, c, {planning, prepare_par: state.session.user.email, prepare_le: new Date().toISOString()});
     const {data:ex}=await sb.from('weeks').select('id,status').eq('week_start',z.week_start).maybeSingle();
     let error;
@@ -1896,22 +2208,59 @@ function subscribe(){
     .on('postgres_changes',{event:'*',schema:'public',table:'meals'},()=>loadWeekData())
     .on('postgres_changes',{event:'*',schema:'public',table:'weeks'},async()=>{ await loadWeeks(); await loadWeekData(); })
     .on('postgres_changes',{event:'*',schema:'public',table:'menu_proposals'},()=>loadProposal())
+    .on('postgres_changes',{event:'*',schema:'public',table:'household_items'},async()=>{ await loadStatic(); render(); })
     .subscribe();
 }
 async function boot(){
   const {data:{session}}=await sb.auth.getSession();
   await onSession(session);
   sb.auth.onAuthStateChange((_e,s)=>{ if((s&&!state.session)||(!s&&state.session)) onSession(s); });
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.session&&state.member) { loadWeeks().then(loadWeekData); loadProposal(); } });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.session&&state.member) { loadStatic().then(loadWeeks).then(loadWeekData); loadProposal(); } });
   // le « prochain repas » change avec l'heure : on rafraîchit l'accueil chaque minute
   setInterval(()=>{ if(state.tab==='accueil' && state.member && !state.wiz && !state.rev && !$('#sheet').classList.contains('on')) render(); }, 60000);
 }
+// ---------- Notifications (Web Push) ----------
+// Un abonnement par téléphone, enregistré dans push_subscriptions (RPC). L'envoi est fait par l'Edge Function `notify`.
+// iPhone : seulement depuis l'app ajoutée à l'écran d'accueil (iOS 16.4+).
+const b64u=s=>{ const b=atob((s+'='.repeat((4-s.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b,c=>c.charCodeAt(0)); };
+async function pushReg(){ return navigator.serviceWorker.ready; }
+async function checkPush(){
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent), standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) state.push = ios&&!standalone?'install':'unsupported';
+  else if(Notification.permission==='denied') state.push='denied';
+  else {
+    const sub=await (await pushReg()).pushManager.getSubscription();
+    state.push=sub?'on':'off';
+    if(sub) saveSub(sub); // garde l'abonnement rattaché à la bonne personne
+  }
+}
+async function saveSub(sub){
+  const j=sub.toJSON();
+  return sb.rpc('save_push_subscription',{p_endpoint:j.endpoint, p_p256dh:j.keys.p256dh, p_auth:j.keys.auth, p_user_agent:navigator.userAgent.slice(0,200)});
+}
+async function pushOn(){
+  try{
+    if(await Notification.requestPermission()!=='granted'){ await checkPush(); render(); toast('Notifications non autorisées'); return; }
+    const reg=await pushReg();
+    const sub=await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64u(VAPID_PUBLIC_KEY)});
+    const {error}=await saveSub(sub); if(error) throw error;
+    state.push='on'; render(); toast('Notifications activées');
+  }catch(e){ toast('Activation impossible : '+(e.message||e)); }
+}
+async function pushOff(silent){
+  try{
+    const sub=await (await pushReg()).pushManager.getSubscription();
+    if(sub){ await sb.rpc('delete_push_subscription',{p_endpoint:sub.endpoint}); await sub.unsubscribe(); }
+    state.push='off'; if(!silent){ render(); toast('Notifications désactivées sur ce téléphone'); }
+  }catch(e){ if(!silent) toast('Erreur : '+(e.message||e)); }
+}
+
 async function onSession(session){
   state.session=session; state.member=null; render();
   if(!session){ if(channel){ sb.removeChannel(channel); channel=null; } return; }
   await checkMember(); if(state.member===false){ render(); return; }
   await Promise.all([loadStatic(), loadWeeks(), loadProposal()]);
-  await loadWeekData(); subscribe();
+  await loadWeekData(); subscribe(); checkPush().then(()=>{ if(state.tab==='reglages') render(); }).catch(()=>{});
   if(location.hash==='#preparer'){ history.replaceState(null,'',location.pathname); openWizard(state.draft); }
   else if(location.hash==='#menu'){ history.replaceState(null,'',location.pathname); if(state.proposal) openReview(); else toast('Pas de menu proposé pour l\'instant'); }
 }
