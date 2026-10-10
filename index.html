@@ -396,7 +396,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.10-1641';
+const APP_VERSION = '2026.10.10-1644';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -1347,7 +1347,7 @@ function openWizard(draft){
 }
 const WIZ_STEPS=['Semaine','Audrey','Repas à prévoir','Événements','Envies','Courses','Placard','Récap'];
 // Tour du placard : fonds de placard (household_items.placard = groupe), on coche ce qui manque → context.placard_manque.
-const PLACARD_GROUPES=['Pâtes, riz et féculents','Assaisonnement','Bouillons et sauces','Huiles et vinaigres','Épicerie de base'];
+const PLACARD_GROUPES=['Pâtes, riz et féculents','Frigo d\'avance','Conserves','Assaisonnement','Bouillons et sauces','Huiles et vinaigres','Épicerie de base'];
 const plHint=n=>(n?`<b>${n}</b> à racheter.`:'Rien ne manque ? Touchez Suivant.')+' Autre chose ? Ajoutez-le à l\'écran précédent, dans les besoins pour la maison.';
 function seg(name,val,opts){ return `<div class="seg" data-seg="${name}">${opts.map(([v,l])=>`<button data-v="${v}" class="${val===v?'on':''}" aria-pressed="${val===v}">${l}</button>`).join('')}</div>`; }
 function renderWizard(){
