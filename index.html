@@ -157,6 +157,25 @@ main{padding:8px 20px 28px;max-width:640px;margin:0 auto}
 .item .by{display:block;font-size:13px;color:var(--muted);font-weight:400;text-decoration:none}
 .item .q{font-size:14px;color:var(--muted);flex:none}
 .irow .del{color:var(--danger);width:44px;height:44px}
+.irow .ed{background:none;color:var(--muted);width:44px;height:44px;padding:0;display:grid;place-items:center;flex:none}
+.irow.new{background:var(--accent-soft);border-radius:10px;margin:0 -8px;padding:0 8px}
+.status{display:flex;gap:12px;align-items:flex-start;background:var(--accent-soft);color:var(--accent-soft-text);border-radius:16px;padding:14px 16px;font-size:14px;line-height:1.35;margin-bottom:12px}
+.status b{display:block;font-size:15px}
+.seg.tight{margin:10px 0 0;background:var(--line)}
+.next{border:2px solid var(--accent);border-radius:18px;overflow:hidden;margin-top:16px}
+.next:not(.open){border-width:1px;border-color:var(--line2)}
+.next-h{width:100%;display:flex;align-items:center;gap:10px;background:var(--accent-soft);color:var(--accent-soft-text);border-radius:0;padding:12px 14px;min-height:52px;text-align:left}
+.next:not(.open) .next-h{background:var(--bg);color:var(--text)}
+.next-h h2{flex:1;margin:0;font-size:17px;font-weight:600}
+.next-h .nc{font-size:14px;font-weight:600}
+.next-b{padding:0 14px 6px}
+.next-b .cat{margin-top:12px}
+.next-b .cat .n{font-weight:500}
+.next-b .irow:last-child{border-bottom:0}
+.store{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.store button{min-height:56px;border-radius:14px;background:var(--bg);border:1px solid var(--line2);font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.store button[aria-checked="true"]{background:var(--accent-soft);color:var(--accent-soft-text);border:2px solid var(--accent)}
+div.l{font-size:14px;color:var(--muted);margin:12px 0 6px}
 .donebar{width:100%;display:flex;align-items:center;gap:12px;margin-top:14px;padding:0 14px;min-height:52px;background:var(--surface);text-align:left;font-weight:600;font-size:15px}
 .donebar .cb{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .donebar .grow{flex:1}
@@ -320,7 +339,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.08-2112';
+const APP_VERSION = '2026.10.10-0912';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATS = {
@@ -363,6 +382,9 @@ const ICONS = {
   right:'<path d="M9.5 5.5L16 12l-6.5 6.5"/>',
   swap:'<path d="M7 4L3.5 7.5 7 11M3.5 7.5H17M17 13l3.5 3.5L17 20M20.5 16.5H7"/>',
   x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
+  trash:'<path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13"/>',
+  car:'<path d="M4 16.5V12l2-5h12l2 5v4.5"/><path d="M3.5 12h17v4.5h-17z"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="16.5" cy="18.5" r="1.5"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
   alert:'<path d="M12 4l9 16H3L12 4z"/><path d="M12 10v4M12 17.5v.01"/>',
   down:'<path d="M6 9.5l6 6 6-6"/>',
@@ -386,6 +408,7 @@ const state = {
   weeks:[], weekIdx:0, meals:[], items:[], backlog:[], household:[], members:[],
   near:[], dishes:[], feedback:[], swapMarks:{},
   filter: localStorage_get('filter') || 'drive', showDone:false, edit:false,
+  addCh: localStorage_get('addch') || 'drive', showNext:null, justAdded:null,
   email: localStorage_get('email') || '', mode:'login', err:'', busy:false,
   draft:null, wiz:null,
   proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[]
@@ -634,29 +657,43 @@ function mealRow(m){
   </div>`;
 }
 
-// Courses (avec « Il manque… »)
+// Courses : où va un ajout ?
+// Drive : sur la liste de la semaine tant que sa commande drive n'est pas passée (weeks.drive_ordered_at, posé par
+// le skill à l'étape 6), sinon sur la prochaine liste (week_id null). Grand Frais : toujours la semaine en cours.
+function driveOrdered(w){ return !!(w && (w.drive_ordered_at || ['courses_faites','archive'].includes(w.status))); }
+function liveWeek(){ const t=todayIso(); return state.weeks.find(w=>w.week_start<=t && addDays(w.week_start,6)>=t) || null; }
+function upcomingWeeks(){ const t=todayIso(); return state.weeks.filter(w=>addDays(w.week_start,6)>=t).sort((a,b)=>a.week_start.localeCompare(b.week_start)); }
+function targetWeek(ch){
+  if(ch==='magasin') return liveWeek() || upcomingWeeks()[0] || null;
+  return upcomingWeeks().find(w=>!driveOrdered(w)) || null;
+}
+function targetLabel(w){ return !w ? 'la prochaine liste' : w===liveWeek() ? 'la liste de cette semaine' : `la liste de la semaine du ${fmtDate(w.week_start)}`; }
+function chName(ch){ return ch==='magasin' ? FOYER.magasin : 'Drive'; }
+function orderedLabel(w){ if(!w.drive_ordered_at) return 'Commande drive passée'; const d=new Date(w.drive_ordered_at); return `Commande drive passée ${DAYS[(d.getDay()+6)%7].toLowerCase()} ${d.getDate()}`; }
+
 function renderCourses(){
   const w=curWeek();
   const all=state.items.filter(i=>i.status!=='annule');
   const taken=all.filter(i=>i.status==='achete').length;
-  let h=`<header class="top"><h1>Courses</h1>${(all.length||state.backlog.length)?`<button class="ghost" id="editmode">${state.edit?'Terminé':'Modifier'}</button>`:''}</header>`;
-  if(w) h+=`<div class="subh"><span>Semaine du ${esc(rangeLabel(w))}</span>${state.weeks.length>1?`<span class="grow"></span>${weekNav()}`:''}</div>`;
+  let h=`<header class="top"><h1>Courses</h1>${all.length?`<button class="ghost" id="editmode">${state.edit?'Terminé':'Modifier'}</button>`:''}</header>`;
+  if(w) h+=`<div class="subh"><span>Semaine du ${esc(rangeLabel(w))}${driveOrdered(w)?` · ${esc(orderedLabel(w))}`:''}</span>${state.weeks.length>1?`<span class="grow"></span>${weekNav()}`:''}</div>`;
   h+='<main>';
-  if(all.length) h+=`<div class="sub"><b style="color:var(--text)">${taken}</b> pris sur ${all.length}</div><div class="prog"><i style="width:${Math.round(taken/all.length*100)}%"></i></div>`;
-  // Il manque…
+  const tDrive=targetWeek('drive');
+  if(w && tDrive && tDrive.id===w.id) h+=`<div class="status">${ic('car')}<span><b>Commande drive pas encore passée</b>Tout ce que vous ajoutez part sur la liste de cette semaine.</span></div>`;
+  // Il manque… (avec Drive / Grand Frais)
+  const ch=state.addCh, tw=targetWeek(ch);
   h+=`<section class="manque"><label for="mq">Il manque quelque chose ?</label>
-    <div class="row"><input id="mq" class="grow" placeholder="Beurre, éponges, sacs poubelle…" autocomplete="off" enterkeyhint="done"><button class="addbtn" id="mqadd" aria-label="Ajouter à la prochaine liste">${ic('plus')}</button></div>`;
-  if(state.edit && state.backlog.length){
-    h+=`<div class="cat" style="margin-top:14px">Noté pour la prochaine liste</div>`+state.backlog.map(it=>`<div class="irow"><div class="item"><span class="lab">${esc(it.label)}<span class="by">${esc([it.qty, it.added_by?'noté par '+prenom(it.added_by):''].filter(Boolean).join(' · '))}</span></span></div><button class="del" data-del="${it.id}" aria-label="Enlever ${esc(it.label)}">${ic('x','s')}</button></div>`).join('');
-  } else {
-    h+=`<p class="noted">${state.backlog.length?'Noté pour la prochaine liste : '+state.backlog.map(b=>`<b>${esc(b.label)}</b>${b.added_by?' ('+esc(prenom(b.added_by))+')':''}`).join(', '):'Rien de noté pour la prochaine liste. Claude reprend tout ce qui est noté ici.'}</p>`;
-  }
-  if(state.household.length) h+=`<div class="chips" aria-label="Les classiques de la maison">${state.household.map(x=>{ const on=state.backlog.some(b=>b.label.toLowerCase()===x.label.toLowerCase()); return `<button data-hh="${esc(x.label)}" class="${on?'on':''}" aria-pressed="${on}">${esc(x.label)}</button>`; }).join('')}</div>`;
+    <div class="row"><input id="mq" class="grow" placeholder="Beurre, éponges, sacs poubelle…" autocomplete="off" enterkeyhint="done"><button class="addbtn" id="mqadd" aria-label="Ajouter">${ic('plus')}</button></div>
+    <div class="seg tight" role="group" aria-label="Où l'acheter">${['drive','magasin'].map(c=>`<button data-addch="${c}" class="${ch===c?'on':''}" aria-pressed="${ch===c}">${esc(chName(c))}</button>`).join('')}</div>
+    <p class="noted">${ch==='drive'&&!tw?'Commande drive passée : ira sur <b>la prochaine liste</b>.':`Ira sur <b>${esc(targetLabel(tw))}</b>${ch==='magasin'?' (chez '+esc(FOYER.magasin)+')':' (Drive)'}.`}</p>`;
+  if(state.household.length) h+=`<div class="chips" aria-label="Les classiques de la maison">${state.household.map(x=>{ const on=pendingFor(x.label); return `<button data-hh="${esc(x.label)}" class="${on?'on':''}" aria-pressed="${!!on}">${esc(x.label)}</button>`; }).join('')}</div>`;
   h+=`</section>`;
+  h+=renderNext();
   if(!w) return h+`<div class="empty">Pas encore de liste de courses cette semaine.</div></main>`;
+  if(all.length) h+=`<div class="sub" style="margin-top:22px"><b style="color:var(--text)">${taken}</b> pris sur ${all.length}</div><div class="prog"><i style="width:${Math.round(taken/all.length*100)}%"></i></div>`;
   // Drive / magasin / tout
-  const left=(ch)=>all.filter(i=>i.status==='a_acheter' && (ch==='tout'||i.channel===ch)).length;
-  h+=`<div class="seg" role="group" aria-label="Où acheter">${['drive','magasin','tout'].map(f=>`<button data-filter="${f}" class="${state.filter===f?'on':''}" aria-pressed="${state.filter===f}">${{drive:'Drive',magasin:esc(FOYER.magasin),tout:'Tout'}[f]}${f!=='tout'?` <span class="n">${left(f)}</span>`:''}</button>`).join('')}</div>`;
+  const left=(c)=>all.filter(i=>i.status==='a_acheter' && (c==='tout'||i.channel===c)).length;
+  h+=`<div class="seg" role="group" aria-label="Filtrer par magasin">${['drive','magasin','tout'].map(f=>`<button data-filter="${f}" class="${state.filter===f?'on':''}" aria-pressed="${state.filter===f}">${{drive:'Drive',magasin:esc(FOYER.magasin),tout:'Tout'}[f]}${f!=='tout'?` <span class="n">${left(f)}</span>`:''}</button>`).join('')}</div>`;
   let items=state.filter==='tout'?all:all.filter(i=>i.channel===state.filter);
   const todo=items.filter(i=>i.status==='a_acheter'), done=items.filter(i=>i.status==='achete');
   if(!items.length) h+=`<div class="empty">Rien à prendre ${state.filter==='magasin'?'chez '+esc(FOYER.magasin):state.filter==='drive'?'au drive':''} cette semaine.</div>`;
@@ -667,17 +704,42 @@ function renderCourses(){
     h+=`<button class="donebar" id="showdone" aria-expanded="${state.showDone}"><span class="cb">${ic('check','xs')}</span><span class="grow">${done.length===1?'1 article déjà pris':done.length+' articles déjà pris'}</span>${ic(state.showDone?'up':'down','s')}</button>`;
     if(state.showDone) h+=done.map(renderItem).join('');
   }
-  h+=`<button class="ghost" id="additem" style="margin-top:12px">${ic('plus','s')} Ajouter à la liste de cette semaine</button>`;
   return h+'</main>';
+}
+// un article déjà prévu (a_acheter) là où irait cet ajout
+function pendingFor(label){
+  const l=label.toLowerCase(); const ids=new Set([targetWeek('drive')?.id, targetWeek('magasin')?.id].filter(Boolean));
+  return [...state.backlog, ...state.items].find(i=>i.status==='a_acheter' && i.label.toLowerCase()===l && (i.week_id==null || ids.has(i.week_id)));
+}
+// La prochaine liste : bien en vue, ouverte d'office une fois la commande drive passée
+function renderNext(){
+  const bl=state.backlog.filter(i=>i.status==='a_acheter');
+  const open = state.showNext ?? !targetWeek('drive');
+  if(!bl.length && targetWeek('drive')) return '';
+  const n=bl.length, count=n===0?'vide':n===1?'1 article':n+' articles';
+  let h=`<section class="next ${open?'open':''}" aria-labelledby="nextt"><button class="next-h" id="nexttoggle" aria-expanded="${open}">${ic('note')}<h2 id="nextt">Prochaine liste</h2><span class="nc">${count}</span>${ic(open?'up':'down','s')}</button>`;
+  if(open){
+    h+='<div class="next-b">';
+    if(!n) h+=`<p class="noted" style="margin:6px 0 10px">Rien pour l'instant. Ce que vous ajoutez au Drive arrivera ici, et Claude le reprendra pour la prochaine commande.</p>`;
+    for(const c of ['drive','magasin']){
+      const xs=bl.filter(i=>(i.channel||'drive')===c); if(!xs.length) continue;
+      h+=`<h3 class="cat">${esc(chName(c))} <span class="n">· ${xs.length}</span></h3>`+xs.map(it=>`<div class="irow"><div class="item"><span class="lab">${esc(it.label)}<span class="by">${esc([it.qty, it.added_by?'noté par '+prenom(it.added_by):''].filter(Boolean).join(' · '))}</span></span></div>${editBtns(it)}</div>`).join('');
+    }
+    h+='</div>';
+  }
+  return h+'</section>';
+}
+function editBtns(it){
+  return `<button class="ed" data-edit="${it.id}" aria-label="Modifier ${esc(it.label)}">${ic('edit','s')}</button><button class="del" data-del="${it.id}" aria-label="Supprimer ${esc(it.label)}">${ic('trash','s')}</button>`;
 }
 function renderItem(it){
   const d=it.status==='achete';
-  const sub=[state.filter==='tout'?(it.channel==='drive'?'Drive':FOYER.magasin):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null].filter(Boolean).join(' · ');
-  return `<div class="irow"><button class="item ${d?'done':''}" data-item="${it.id}" aria-pressed="${d}">
+  const sub=[state.filter==='tout'?chName(it.channel):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null].filter(Boolean).join(' · ');
+  return `<div class="irow ${state.justAdded===it.id?'new':''}"><button class="item ${d?'done':''}" data-item="${it.id}" aria-pressed="${d}">
     <span class="cb">${d?ic('check','xs'):''}</span>
     <span class="lab">${esc(it.label)}${sub?`<span class="by">${esc(sub)}</span>`:''}</span>
     ${it.qty?`<span class="q">${esc(it.qty)}</span>`:''}
-  </button>${state.edit?`<button class="del" data-del="${it.id}" aria-label="Enlever ${esc(it.label)}">${ic('x','s')}</button>`:''}</div>`;
+  </button>${state.edit?editBtns(it):''}</div>`;
 }
 
 function renderReglages(){
@@ -700,23 +762,36 @@ function closeSheet(){ $('#sheet').classList.remove('on'); $('#sheetbg').classLi
 $('#sheetbg').onclick=closeSheet;
 const closeBtn = `<button class="iconbtn round" data-close aria-label="Fermer">${ic('x','s')}</button>`;
 
-function openAddSheet(){
-  openSheet(`<div class="grab"></div><div class="sheet-h"><h2 id="addt">On ajoute quoi ?</h2>${closeBtn}</div>
-    <input id="al" aria-labelledby="addt" placeholder="ex. yaourts, pain de mie…" autocomplete="off">
-    <div class="row" style="margin-top:8px"><input id="aq" class="grow" placeholder="Quantité (optionnel)" aria-label="Quantité">
-      <select id="ac" style="width:48%" aria-label="Rayon">${CAT_ORDER.map(c=>`<option value="${c}">${CATS[c]}</option>`).join('')}</select></div>
-    <div class="seg" id="ach" role="group" aria-label="Où acheter"><button data-ch="drive" class="on" aria-pressed="true">Drive</button><button data-ch="magasin" aria-pressed="false">${esc(FOYER.magasin)}</button></div>
-    <button id="aok" class="primary btn big" style="width:100%;margin-top:8px">Ajouter</button>`);
-  const sheet=$('#sheet'); let ch='drive';
-  sheet.querySelector('#ach').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; ch=b.dataset.ch; sheet.querySelectorAll('#ach button').forEach(x=>{ x.classList.toggle('on',x===b); x.setAttribute('aria-pressed',x===b); }); };
-  sheet.querySelector('#al').oninput=e=>{ sheet.querySelector('#ac').value=guessCat(e.target.value); };
-  sheet.querySelector('#aok').onclick=async()=>{
-    const label=sheet.querySelector('#al').value.trim(); if(!label) return;
-    const {error}=await sb.from('shopping_items').insert({week_id:curWeek().id,label,qty:sheet.querySelector('#aq').value.trim()||null,category:sheet.querySelector('#ac').value,channel:ch,source:'maison',added_by:state.session.user.email});
-    if(error){ toast('Erreur : '+error.message); return; }
-    closeSheet(); toast('C\'est noté'); await loadWeekData();
+function openEditSheet(id){
+  const it=[...state.items,...state.backlog].find(i=>i.id===id); if(!it) return;
+  let ch=it.channel||'drive';
+  const here=()=>{ const w=state.weeks.find(x=>x.id===it.week_id); return it.week_id==null ? 'la prochaine liste' : (w ? targetLabel(w) : 'la liste de sa semaine'); };
+  const where=()=>{
+    if(it.status!=='a_acheter' || ch===(it.channel||'drive')) return `Sur ${esc(here())}.`;
+    const t=targetWeek(ch);
+    return ch==='magasin' ? `Passe chez ${esc(FOYER.magasin)}, sur ${esc(targetLabel(t))}.` : t ? `Passe au Drive, sur ${esc(targetLabel(t))}.` : 'Passe au Drive, sur la prochaine liste (la commande de cette semaine est passée).';
   };
-  setTimeout(()=>sheet.querySelector('#al').focus(),250);
+  openSheet(`<div class="grab"></div><div class="sheet-h"><h2 id="edt">Modifier l'article</h2>${closeBtn}</div>
+    <label class="l" for="el" style="margin-top:0">Article</label><input id="el" value="${esc(it.label)}" autocomplete="off">
+    <div class="two"><div><label class="l" for="eq">Quantité</label><input id="eq" value="${esc(it.qty||'')}" placeholder="optionnel"></div>
+      <div><label class="l" for="ec">Rayon</label><select id="ec">${CAT_ORDER.map(c=>`<option value="${c}" ${c===(it.category||'autre')?'selected':''}>${CATS[c]}</option>`).join('')}</select></div></div>
+    <div class="l" id="ewl">Où l'acheter</div>
+    <div class="store" role="radiogroup" aria-labelledby="ewl">${['drive','magasin'].map(c=>`<button role="radio" data-ech="${c}" aria-checked="${ch===c}">${ic(c==='drive'?'car':'bag')}${esc(chName(c))}</button>`).join('')}</div>
+    <p class="noted" id="ewhere">${where()}</p>
+    <div class="foot" style="margin-top:16px"><button id="eok" class="primary btn big">Enregistrer</button>
+      <button id="edel" class="btn" style="background:none;color:var(--danger)">${ic('trash','s')} Supprimer l'article</button></div>`);
+  const sheet=$('#sheet');
+  sheet.querySelectorAll('[data-ech]').forEach(b=>b.onclick=()=>{ ch=b.dataset.ech; sheet.querySelectorAll('[data-ech]').forEach(x=>x.setAttribute('aria-checked', x===b)); sheet.querySelector('#ewhere').innerHTML=where(); });
+  sheet.querySelector('#edel').onclick=()=>{ closeSheet(); delItem(it.id); };
+  sheet.querySelector('#eok').onclick=async()=>{
+    const label=sheet.querySelector('#el').value.trim(); if(!label) return;
+    const patch={label, qty:sheet.querySelector('#eq').value.trim()||null, category:sheet.querySelector('#ec').value, channel:ch};
+    let moved=false;
+    if(ch!==(it.channel||'drive') && it.status==='a_acheter'){ const t=targetWeek(ch); const wid=t?t.id:null; if(wid!==(it.week_id??null)){ patch.week_id=wid; moved=true; } }
+    const {error}=await sb.from('shopping_items').update(patch).eq('id',it.id);
+    if(error){ toast('Erreur : '+error.message); return; }
+    closeSheet(); toast(moved?`Déplacé sur ${targetLabel(targetWeek(ch))}`:'C\'est modifié'); await loadWeekData();
+  };
 }
 
 // Échanger un repas avec n'importe quel autre repas de la même semaine
@@ -918,7 +993,9 @@ function bindMain(){
   document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>rateMeal(b.dataset.id, b.dataset.rate));
   const em=$('#editmode'); if(em) em.onclick=()=>{ state.edit=!state.edit; render(); };
   const sd=$('#showdone'); if(sd) sd.onclick=()=>{ state.showDone=!state.showDone; render(); };
-  const ai=$('#additem'); if(ai) ai.onclick=openAddSheet;
+  document.querySelectorAll('[data-addch]').forEach(b=>b.onclick=()=>{ state.addCh=b.dataset.addch; localStorage_set('addch',state.addCh); render(); });
+  const nt=$('#nexttoggle'); if(nt) nt.onclick=()=>{ state.showNext=!(state.showNext ?? !targetWeek('drive')); render(); };
+  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEditSheet(b.dataset.edit));
   document.querySelectorAll('[data-item]').forEach(el=>el.onclick=async()=>{
     const it=state.items.find(i=>i.id===el.dataset.item); if(!it) return;
     const done=it.status!=='achete';
@@ -928,13 +1005,13 @@ function bindMain(){
   });
   document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delItem(b.dataset.del));
   const mq=$('#mq'); if(mq){
-    const add=async()=>{ const label=mq.value.trim(); if(!label) return; mq.value=''; await addBacklog(label); $('#mq')?.focus(); };
+    const add=async()=>{ const label=mq.value.trim(); if(!label) return; mq.value=''; await addItem(label, state.addCh); $('#mq')?.focus(); };
     $('#mqadd').onclick=add; mq.onkeydown=e=>{ if(e.key==='Enter') add(); };
   }
   document.querySelectorAll('[data-hh]').forEach(b=>b.onclick=async()=>{
-    const label=b.dataset.hh; const ex=state.backlog.find(x=>x.label.toLowerCase()===label.toLowerCase());
-    if(ex){ await sb.from('shopping_items').delete().eq('id',ex.id); toast('Enlevé de la prochaine liste'); await loadWeekData(); }
-    else { const h=state.household.find(x=>x.label===label); await addBacklog(label, h); }
+    const label=b.dataset.hh; const ex=pendingFor(label);
+    if(ex) delItem(ex.id);
+    else { const h=state.household.find(x=>x.label===label); await addItem(label, h?.channel||'drive', h); }
   });
   const lo=$('#logout'); if(lo) lo.onclick=()=>sb.auth.signOut();
   const am=$('#addmember'); if(am) am.onclick=async()=>{
@@ -944,17 +1021,20 @@ function bindMain(){
     toast('Bienvenue dans le foyer !'); await loadStatic(); render();
   };
 }
-async function addBacklog(label, h){
-  const {error}=await sb.from('shopping_items').insert({week_id:null,label,qty:h?.default_qty||null,category:h?.category||guessCat(label),channel:h?.channel||'drive',source:h?'maison':'manque',added_by:state.session.user.email});
+async function addItem(label, ch, h){
+  const t=targetWeek(ch);
+  const {data,error}=await sb.from('shopping_items').insert({week_id:t?t.id:null,label,qty:h?.default_qty||null,category:h?.category||guessCat(label),channel:ch,status:'a_acheter',source:h?'maison':'manque',added_by:state.session.user.email}).select('id');
   if(error){ toast('Erreur : '+error.message); return; }
-  toast('C\'est noté pour la prochaine liste'); await loadWeekData();
+  state.justAdded=data?.[0]?.id||null; if(!t) state.showNext=true;
+  toast(`Ajouté sur ${targetLabel(t)}`); await loadWeekData();
+  setTimeout(()=>{ state.justAdded=null; if(state.tab==='courses' && !$('#sheet').classList.contains('on')) render(); }, 5000);
 }
 async function delItem(id){
   const it=[...state.items,...state.backlog].find(i=>i.id===id); if(!it) return;
   const {error}=await sb.from('shopping_items').delete().eq('id',id);
   if(error){ toast('Erreur : '+error.message); return; }
   state.items=state.items.filter(i=>i.id!==id); state.backlog=state.backlog.filter(i=>i.id!==id); render();
-  snack(`« ${it.label} » enlevé`, 'Annuler', async()=>{ const {created_at, ...row}=it; const {error}=await sb.from('shopping_items').insert(row); if(error) toast('Erreur : '+error.message); await loadWeekData(); });
+  snack(`« ${it.label} » supprimé`, 'Annuler', async()=>{ const {created_at, ...row}=it; const {error}=await sb.from('shopping_items').insert(row); if(error) toast('Erreur : '+error.message); await loadWeekData(); });
 }
 
 // ---------- Assistant « Préparer la semaine » ----------
