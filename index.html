@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-4ErChrhGQ/hjRB3dZyb54IgdOmuET0J0N3SNmzW89FU='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-I0EGBmjFfk3SegLMePC0U46miL+p7aLIpJ24OHxdPF4='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -169,7 +169,22 @@ main.courses .find input{background:var(--card);border-color:var(--line)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .chips button{min-height:40px;padding:6px 12px;font-size:14px;border-radius:999px;background:var(--bg);border:1px solid var(--line2)}
 .chips button.on{background:var(--accent-soft);color:var(--accent-soft-text);border-color:transparent;font-weight:600}
-#mqhh button{display:inline-flex;align-items:center;gap:6px}
+.destb{display:inline-flex;align-items:center;gap:8px;margin-top:10px;min-height:44px;padding:0 14px;border-radius:999px;background:var(--surface);font-size:14px;font-weight:500}
+#mqdestp{padding-bottom:4px}
+.keep{display:flex;align-items:center;gap:10px;min-height:44px;margin-top:6px;font-size:15px;cursor:pointer}
+.keep[hidden]{display:none}
+.keep input{width:22px;height:22px;min-height:0;padding:0;margin:0;flex:none;accent-color:var(--accent)}
+.hh-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:20px}
+.hh-h h3{margin:0;font-size:17px;font-weight:600}
+.hh-h span{font-size:14px;color:var(--muted)}
+.hhg{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:16px 0 2px}
+.sheet .art .fg{background:var(--bg)}
+.hhr{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0 2px 0 0;background:transparent;border-radius:0;text-align:left;border-bottom:1px solid var(--line)}
+.hhr .n{flex:1;min-width:0;font-size:16px}
+.hhr .hs{font-size:13px;font-weight:600;color:var(--accent-soft-text);white-space:nowrap}
+.hhr .p{width:36px;height:36px;border-radius:18px;border:1px solid var(--line2);display:grid;place-items:center;color:var(--accent);flex:none}
+.hhr.on .n{color:var(--muted)}
+.hhr.on .p{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .seg{display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:4px;background:var(--surface);border-radius:12px;padding:4px;margin:18px 0 4px}
 .seg button{background:transparent;min-height:40px;padding:6px;border-radius:9px;font-size:15px;color:var(--muted)}
 .seg button.on{background:var(--bg);color:var(--text);font-weight:600;box-shadow:var(--shadow)}
@@ -505,7 +520,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.11-1410';
+const APP_VERSION = '2026.10.11-1433';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1108,9 +1123,9 @@ function renderItem(it, o={}){
   return swipeRow(it, `<button class="tick ${d?'got':''}" data-item="${it.id}" aria-pressed="${d}"><span class="ck">${d?ic('check','xs'):''}</span><span class="al"><span class="an">${state.q?markQ(it.label):esc(it.label)}</span>${sub?`<span class="am">${esc(sub)}</span>`:''}</span>${qty?`<span class="aq">${esc(qty)}</span>`:''}</button>`);
 }
 // Glisser un article vers la gauche : Modifier / Supprimer. Toucher ailleurs referme.
-function bindSwipes(){
+function bindSwipes(root=document){
   const W=168;
-  document.querySelectorAll('.art').forEach(row=>{
+  root.querySelectorAll('.art').forEach(row=>{
     const fg=row.querySelector('.fg'); let x0=0, y0=0, dx=0, base=0, drag=false, pid=null;
     fg.addEventListener('pointerdown',e=>{ if(e.pointerType==='mouse' && e.button!==0) return; pid=e.pointerId; x0=e.clientX; y0=e.clientY; dx=0; drag=false; base=row.classList.contains('open')?-W:0; });
     fg.addEventListener('pointermove',e=>{
@@ -1134,37 +1149,61 @@ function bindSwipes(){
   });
 }
 document.addEventListener('pointerdown',e=>{ if(!e.target.closest('.art.open')) document.querySelectorAll('.art.open').forEach(r=>r.classList.remove('open')); });
-// Feuille « Ajouter à la liste » : le magasin de l'onglet par défaut, la liste de destination, les doublons, les classiques
+// Feuille « Ajouter à la liste » : un seul champ qui cherche dans les classiques ou crée un article,
+// la destination repliée en une pastille, les classiques en liste par rayon
 function openAddSheet(prefill){
-  let ch=typeof prefill==='string' ? 'drive' : curChannel();
+  let ch=typeof prefill==='string' ? 'drive' : curChannel(), destOpen=false;
   openSheet(`<div class="grab"></div><div class="sheet-h"><h2 id="addt">Ajouter à la liste</h2>${closeBtn}</div>
-    <label class="l" for="mq" style="margin-top:0">Article</label>
-    <div class="row"><input id="mq" class="grow" placeholder="Beurre, éponges, sacs poubelle…" autocomplete="off" enterkeyhint="done"><input id="mqq" aria-label="Quantité" placeholder="Qté" autocomplete="off" style="width:88px;flex:none"></div>
+    <div class="find" role="search" style="margin:0">${ic('search','s')}<input id="mq" type="search" placeholder="Chercher ou écrire un article" aria-label="Chercher ou écrire un article" autocomplete="off" enterkeyhint="done"></div>
     <div id="mqdup"></div>
-    <div class="l" id="mqchl">Où l'acheter</div>
-    <div class="store" role="radiogroup" aria-labelledby="mqchl">${CHANNELS.map(c=>`<button role="radio" data-ach="${c}" aria-checked="${c===ch}">${ic(chIcon(c))}${esc(chName(c))}</button>`).join('')}</div>
-    <div class="l" id="mqwkl">Pour quelle liste</div>
-    <div class="chips" role="radiogroup" aria-labelledby="mqwkl" id="mqwk" style="margin-top:0"></div>
-    <p class="noted" id="mqdest"></p>
-    ${state.household.length?`<div class="l" style="margin-top:16px">Les classiques de la maison</div><div class="chips" id="mqhh" style="margin-top:0"></div>`:''}
-    <div class="foot" style="margin-top:18px"><button class="btn big primary" id="mqadd"></button><p class="noted center" id="mqdone" aria-live="polite" style="margin:0"></p></div>`);
-  const s=$('#sheet'), inp=s.querySelector('#mq'), qq=s.querySelector('#mqq'), go=s.querySelector('#mqadd');
+    <div id="mqnew" hidden>
+      <div class="row" style="margin-top:10px"><input id="mqq" aria-label="Quantité" placeholder="Qté" autocomplete="off" style="width:88px;flex:none"><button class="btn big primary grow" id="mqadd"></button></div>
+      <label class="keep" id="mqkeepl"><input type="checkbox" id="mqkeep"><span>Le garder dans les classiques</span></label>
+    </div>
+    <p class="noted" id="mqdone" aria-live="polite" style="margin:8px 0 0"></p>
+    <button class="destb" id="mqdestb" aria-expanded="false" aria-controls="mqdestp"></button>
+    <div id="mqdestp" hidden>
+      <div class="l" id="mqchl">Où l'acheter</div>
+      <div class="store" role="radiogroup" aria-labelledby="mqchl">${CHANNELS.map(c=>`<button role="radio" data-ach="${c}" aria-checked="${c===ch}">${ic(chIcon(c))}${esc(chName(c))}</button>`).join('')}</div>
+      <div class="l" id="mqwkl">Pour quelle liste</div>
+      <div class="chips" role="radiogroup" aria-labelledby="mqwkl" id="mqwk" style="margin-top:0"></div>
+      <p class="noted" id="mqdest"></p>
+    </div>
+    ${state.household.length?`<div class="hh-h"><h3>Les classiques</h3><span id="mqhhn"></span></div><p class="noted" id="mqtip" style="margin:4px 0 0">Glissez un classique vers la gauche pour le modifier ou le retirer.</p><div id="mqhh"></div>`:''}`);
+  const s=$('#sheet'), inp=s.querySelector('#mq'), qq=s.querySelector('#mqq'), go=s.querySelector('#mqadd'), keep=s.querySelector('#mqkeep');
   // Destination : choisie par la règle Drive / magasin tant qu'on n'a rien touché (pick undefined), sinon celle choisie
   // ('' = la prochaine liste, sinon l'id de la semaine)
   let pick;
   const dest=()=>pick===undefined ? targetWeek(ch) : (pick ? state.weeks.find(w=>w.id===pick)||null : null);
+  const classic=q=>state.household.find(x=>fold(x.label)===fold(q));
   const refresh=()=>{
-    const tw=dest(), dup=dupFor(inp.value), auto=pick===undefined;
+    const tw=dest(), q=inp.value.trim(), dup=dupFor(q), auto=pick===undefined, h=q&&classic(q), inPl=q&&state.placard.find(x=>fold(x.label)===fold(q));
+    s.querySelector('#mqdestb').innerHTML=`${ic(chIcon(ch),'s')}<span>${esc(chName(ch))} · ${!tw?'prochaine liste':tw===liveWeek()?'cette semaine':'semaine du '+esc(fmtDate(tw.week_start))}</span>${ic(destOpen?'up':'down','s')}`;
+    s.querySelector('#mqdestb').setAttribute('aria-expanded', destOpen);
+    s.querySelector('#mqdestp').hidden=!destOpen;
     const opts=[...upcomingWeeks().map(w=>[w.id, w===liveWeek()?'Cette semaine':`Semaine du ${fmtDate(w.week_start)}`, ch==='drive'&&driveOrdered(w)]), ['', 'Prochaine liste', false]];
     s.querySelector('#mqwk').innerHTML=opts.map(([id,l,ord])=>{ const on=(tw?tw.id:'')===id; return `<button role="radio" data-wk2="${id}" class="${on?'on':''}" aria-checked="${on}">${on?ic('check','xs'):''}${esc(l)}${ord?' · commande passée':''}</button>`; }).join('');
     s.querySelectorAll('[data-wk2]').forEach(b=>b.onclick=()=>{ pick=b.dataset.wk2; refresh(); });
     s.querySelector('#mqdest').innerHTML = !auto ? (ch==='drive' && tw && driveOrdered(tw) ? 'La commande drive de cette semaine est déjà passée : il faudra l\'acheter à part.' : '')
       : ch==='drive' && !tw ? 'Commande drive passée : ira sur <b>la prochaine liste</b>.' : `Ira sur <b>${esc(targetLabel(tw))}</b>${ch==='drive'?' (commande drive pas encore passée)':''}.`;
     s.querySelector('#mqdup').innerHTML = dup ? `<div class="dupw">${ic('alert','s')}<span><b>${esc([dup.label, dup.qty].filter(Boolean).join(', '))}</b> est déjà prévu ${dup.week_id==null?'sur la prochaine liste':chOf(dup)==='drive'?'au Drive':'chez '+esc(chName(chOf(dup)))}.</span></div>` : '';
-    go.innerHTML = ic('plus','s')+(dup?'Ajouter quand même':ch==='drive'?'Ajouter au Drive':'Ajouter chez '+esc(chName(ch)));
-    go.disabled = !inp.value.trim();
+    // Le bloc d'ajout n'apparaît qu'en tapant ; « garder dans les classiques » seulement pour un article nouveau
+    s.querySelector('#mqnew').hidden=!q;
+    s.querySelector('#mqkeepl').hidden=!!(h||inPl);
+    go.innerHTML = ic('plus','s')+(dup?'Ajouter quand même':`Ajouter « ${esc(q.length>22?q.slice(0,21)+'…':q)} »`);
+    go.disabled = !q;
     const hh=s.querySelector('#mqhh'); if(!hh) return;
-    hh.innerHTML=state.household.map(x=>{ const on=pendingFor(x.label); return `<button data-hh="${esc(x.label)}" class="${on?'on':''}" aria-pressed="${!!on}">${on?ic('check','xs'):''}${esc(x.label)}</button>`; }).join('');
+    const f=fold(q), xs=state.household.filter(x=>!f || fold(x.label).includes(f));
+    const n=state.household.filter(x=>pendingFor(x.label)).length;
+    s.querySelector('#mqhhn').textContent = f ? (xs.length?`${xs.length} sur ${state.household.length}`:'') : n ? `${n} déjà sur la liste` : '';
+    const groups={}; xs.forEach(x=>{ const c=CATS[x.category]?x.category:'autre'; (groups[c]=groups[c]||[]).push(x); });
+    hh.innerHTML = !xs.length ? `<p class="noted" style="margin-top:4px">Aucun classique ne correspond.</p>`
+      : CAT_ORDER.filter(c=>groups[c]).map(c=>`<div class="hhg">${esc(CATS[c])}</div>`+groups[c].map(x=>{ const on=pendingFor(x.label);
+        return `<div class="art"><div class="acts"><button class="a-ed" data-hhed="${x.id}" aria-label="Modifier le classique ${esc(x.label)}">${ic('edit','s')}Modifier</button><button class="a-del" data-hhdel="${x.id}" aria-label="Retirer ${esc(x.label)} des classiques">${ic('trash','s')}Retirer</button></div><div class="fg"><button class="hhr ${on?'on':''}" data-hh="${esc(x.label)}" aria-pressed="${!!on}"><span class="n">${esc(x.label)}</span>${on?'<span class="hs">Sur la liste</span>':''}<span class="p">${ic(on?'check':'plus','s')}</span></button></div></div>`; }).join('')).join('');
+    s.querySelector('#mqtip').hidden=!xs.length || !!localStorage_get('hhtip');
+    bindSwipes(hh);
+    hh.querySelectorAll('[data-hhed]').forEach(b=>b.onclick=()=>{ localStorage_set('hhtip','1'); openClassicSheet(b.dataset.hhed); });
+    hh.querySelectorAll('[data-hhdel]').forEach(b=>b.onclick=async()=>{ localStorage_set('hhtip','1'); await removeClassic(b.dataset.hhdel); if(s.classList.contains('on')) refresh(); });
     hh.querySelectorAll('[data-hh]').forEach(b=>b.onclick=async()=>{
       const label=b.dataset.hh, ex=pendingFor(label);
       if(ex) await delItem(ex.id);
@@ -1172,14 +1211,20 @@ function openAddSheet(prefill){
       if(s.classList.contains('on')) refresh();
     });
   };
+  s.querySelector('#mqdestb').onclick=()=>{ destOpen=!destOpen; refresh(); };
   s.querySelectorAll('[data-ach]').forEach(b=>b.onclick=()=>{ ch=b.dataset.ach; s.querySelectorAll('[data-ach]').forEach(x=>x.setAttribute('aria-checked', x===b)); refresh(); });
   const add=async()=>{
     const label=inp.value.trim(); if(!label) return;
-    const qty=qq.value.trim()||null, tw=dest();
-    inp.value=''; qq.value=''; refresh();
-    if(!await addItem(label, ch, null, qty, true, null, tw)) return;
+    const qty=qq.value.trim()||null, tw=dest(), keepIt=keep.checked && !s.querySelector('#mqkeepl').hidden;
+    let h=classic(label)||null;
+    inp.value=''; qq.value=''; keep.checked=false; refresh();
+    if(keepIt){
+      const {error}=await sb.from('household_items').upsert({label:cap(label), category:guessCat(label), channel:ch, placard:null, active:true},{onConflict:'label'});
+      if(error) toast('Erreur : '+error.message); else { await loadStatic(); h=classic(label)||null; }
+    }
+    if(!await addItem(label, ch, h, qty, true, null, tw)) return;
     if(!s.classList.contains('on')) return;
-    s.querySelector('#mqdone').innerHTML=`« ${esc(label)} » ajouté sur ${esc(targetLabel(tw))}. Autre chose ?`;
+    s.querySelector('#mqdone').innerHTML=`« ${esc(label)} » ajouté sur ${esc(targetLabel(tw))}${keepIt&&h?', et gardé dans les classiques':''}. Autre chose ?`;
     refresh(); inp.focus();
   };
   inp.oninput=refresh; go.onclick=add;
@@ -1187,6 +1232,45 @@ function openAddSheet(prefill){
   qq.onkeydown=e=>{ if(e.key==='Enter') add(); };
   if(typeof prefill==='string') inp.value=prefill;
   refresh(); setTimeout(()=>inp.focus(), 60);
+}
+// Un classique (household_items sans placard) : nom, rayon, magasin, quantité habituelle ; retour à la feuille d'ajout
+function openClassicSheet(id){
+  const x=state.household.find(h=>h.id===id); if(!x) return;
+  let ch=x.channel||'drive';
+  openSheet(`<div class="grab"></div><div class="sheet-h"><div><h2 id="cst">Modifier le classique</h2><div class="sub">Change le rayon, le magasin ou la quantité habituelle.</div></div>${closeBtn}</div>
+    <label class="l" for="csl" style="margin-top:0">Nom</label><input id="csl" value="${esc(x.label)}" autocomplete="off">
+    <div class="two"><div><label class="l" for="csq">Quantité habituelle</label><input id="csq" value="${esc(x.default_qty||'')}" placeholder="optionnel" autocomplete="off"></div>
+      <div><label class="l" for="csc">Rayon</label><select id="csc">${CAT_ORDER.map(c=>`<option value="${c}" ${c===(x.category||'autre')?'selected':''}>${CATS[c]}</option>`).join('')}</select></div></div>
+    <div class="l" id="cswl">Où l'acheter</div>
+    <div class="store" role="radiogroup" aria-labelledby="cswl">${CHANNELS.map(c=>`<button role="radio" data-cch="${c}" aria-checked="${ch===c}">${ic(chIcon(c))}${esc(chName(c))}</button>`).join('')}</div>
+    <div id="csdup"></div>
+    <div class="foot" style="margin-top:16px"><button id="csok" class="primary btn big">Enregistrer</button>
+      <button id="csback" class="btn outline">Retour</button>
+      <button id="csdel" class="btn" style="background:none;color:var(--danger)">${ic('trash','s')} Retirer des classiques</button></div>`);
+  const s=$('#sheet');
+  s.querySelectorAll('[data-cch]').forEach(b=>b.onclick=()=>{ ch=b.dataset.cch; s.querySelectorAll('[data-cch]').forEach(y=>y.setAttribute('aria-checked', y===b)); });
+  s.querySelector('#csback').onclick=()=>openAddSheet();
+  s.querySelector('#csdel').onclick=async()=>{ await removeClassic(x.id); openAddSheet(); };
+  s.querySelector('#csok').onclick=async()=>{
+    const label=cap(s.querySelector('#csl').value.trim()); if(!label) return;
+    const other=[...state.household, ...state.placard].find(h=>h.id!==x.id && fold(h.label)===fold(label));
+    if(other){ s.querySelector('#csdup').innerHTML=`<div class="dupw">${ic('alert','s')}<span><b>${esc(other.label)}</b> existe déjà ${other.placard?'dans le placard':'dans les classiques'}.</span></div>`; return; }
+    const {error}=await sb.from('household_items').update({label, default_qty:s.querySelector('#csq').value.trim()||null, category:s.querySelector('#csc').value, channel:ch}).eq('id',x.id);
+    if(error){ toast('Erreur : '+error.message); return; }
+    await loadStatic(); toast('Classique modifié'); openAddSheet();
+  };
+}
+// Retirer un classique : on le désactive (active=false), annulable ; il ne touche pas aux listes en cours
+async function removeClassic(id){
+  const x=state.household.find(h=>h.id===id); if(!x) return;
+  const {error}=await sb.from('household_items').update({active:false}).eq('id',id);
+  if(error){ toast('Erreur : '+error.message); return; }
+  state.household=state.household.filter(h=>h.id!==id);
+  snack(`« ${x.label} » retiré des classiques`, 'Annuler', async()=>{
+    const {error}=await sb.from('household_items').update({active:true}).eq('id',id);
+    if(error){ toast('Erreur : '+error.message); return; }
+    await loadStatic(); if($('#sheet').classList.contains('on') && $('#mqhh')) openAddSheet();
+  });
 }
 // Article ↔ repas (shopping_items.for_meals) : seulement les repas de la semaine affichée
 function itemMeals(it){ return (it.for_meals||[]).map(l=>({...l, meal:state.meals.find(m=>m.id===l.meal_id)})).filter(l=>l.meal).sort((a,b)=>mealSort(a.meal,b.meal)); }
