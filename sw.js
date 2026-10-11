@@ -1,0 +1,38 @@
+// Aide repas — service worker minimal : réseau d'abord, cache en secours (hors ligne).
+const CACHE = 'aide-repas-2026.10.11-1101';
+self.addEventListener('install', () => { self.skipWaiting(); });
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET' || !e.request.url.startsWith(self.registration.scope)) return;
+  e.respondWith(
+    // seules les réponses OK vont au cache : une erreur (404, 500…) ne remplace jamais une bonne version hors ligne
+    fetch(e.request).then(r => { if (r.ok) { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(e.request, c)); } return r; })
+      .catch(() => caches.match(e.request))
+  );
+});
+
+// Notifications (envoyées par l'Edge Function `notify`) : { title, body, url, tag }
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Aide repas', {
+    body: d.body || '', tag: d.tag, icon: 'icon-192.png', badge: 'icon-192.png', lang: 'fr', data: { url: d.url || self.registration.scope },
+  }));
+});
+// Au toucher : ouvre l'app (ou la réutilise) sur la bonne page ; ?n= force un rechargement pour que #preparer soit lu.
+// Seulement une adresse de l'app (dans le scope du service worker) : sinon, l'accueil de l'app.
+function inScope(url) {
+  const scope = self.registration.scope;
+  try { const u = new URL(url || scope, scope); return u.href.startsWith(scope) ? u : new URL(scope); } catch { return new URL(scope); }
+}
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const u = inScope(e.notification.data?.url);
+  u.searchParams.set('n', Date.now());
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    const c = cs.find(x => x.url.startsWith(self.registration.scope));
+    if (c) return c.focus().then(w => (w || c).navigate(u.href));
+    return clients.openWindow(u.href);
+  }));
+});
