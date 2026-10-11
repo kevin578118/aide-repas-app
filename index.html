@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-/qR2ncgKTkKO5ePXW0s/qNw1xUo/P0s7Xz4tf4T5RcU='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-4ErChrhGQ/hjRB3dZyb54IgdOmuET0J0N3SNmzW89FU='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -505,7 +505,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.11-1328';
+const APP_VERSION = '2026.10.11-1410';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1143,13 +1143,23 @@ function openAddSheet(prefill){
     <div id="mqdup"></div>
     <div class="l" id="mqchl">Où l'acheter</div>
     <div class="store" role="radiogroup" aria-labelledby="mqchl">${CHANNELS.map(c=>`<button role="radio" data-ach="${c}" aria-checked="${c===ch}">${ic(chIcon(c))}${esc(chName(c))}</button>`).join('')}</div>
+    <div class="l" id="mqwkl">Pour quelle liste</div>
+    <div class="chips" role="radiogroup" aria-labelledby="mqwkl" id="mqwk" style="margin-top:0"></div>
     <p class="noted" id="mqdest"></p>
     ${state.household.length?`<div class="l" style="margin-top:16px">Les classiques de la maison</div><div class="chips" id="mqhh" style="margin-top:0"></div>`:''}
     <div class="foot" style="margin-top:18px"><button class="btn big primary" id="mqadd"></button><p class="noted center" id="mqdone" aria-live="polite" style="margin:0"></p></div>`);
   const s=$('#sheet'), inp=s.querySelector('#mq'), qq=s.querySelector('#mqq'), go=s.querySelector('#mqadd');
+  // Destination : choisie par la règle Drive / magasin tant qu'on n'a rien touché (pick undefined), sinon celle choisie
+  // ('' = la prochaine liste, sinon l'id de la semaine)
+  let pick;
+  const dest=()=>pick===undefined ? targetWeek(ch) : (pick ? state.weeks.find(w=>w.id===pick)||null : null);
   const refresh=()=>{
-    const tw=targetWeek(ch), dup=dupFor(inp.value);
-    s.querySelector('#mqdest').innerHTML = ch==='drive' && !tw ? 'Commande drive passée : ira sur <b>la prochaine liste</b>.' : `Ira sur <b>${esc(targetLabel(tw))}</b>${ch==='drive'?' (commande drive pas encore passée)':''}.`;
+    const tw=dest(), dup=dupFor(inp.value), auto=pick===undefined;
+    const opts=[...upcomingWeeks().map(w=>[w.id, w===liveWeek()?'Cette semaine':`Semaine du ${fmtDate(w.week_start)}`, ch==='drive'&&driveOrdered(w)]), ['', 'Prochaine liste', false]];
+    s.querySelector('#mqwk').innerHTML=opts.map(([id,l,ord])=>{ const on=(tw?tw.id:'')===id; return `<button role="radio" data-wk2="${id}" class="${on?'on':''}" aria-checked="${on}">${on?ic('check','xs'):''}${esc(l)}${ord?' · commande passée':''}</button>`; }).join('');
+    s.querySelectorAll('[data-wk2]').forEach(b=>b.onclick=()=>{ pick=b.dataset.wk2; refresh(); });
+    s.querySelector('#mqdest').innerHTML = !auto ? (ch==='drive' && tw && driveOrdered(tw) ? 'La commande drive de cette semaine est déjà passée : il faudra l\'acheter à part.' : '')
+      : ch==='drive' && !tw ? 'Commande drive passée : ira sur <b>la prochaine liste</b>.' : `Ira sur <b>${esc(targetLabel(tw))}</b>${ch==='drive'?' (commande drive pas encore passée)':''}.`;
     s.querySelector('#mqdup').innerHTML = dup ? `<div class="dupw">${ic('alert','s')}<span><b>${esc([dup.label, dup.qty].filter(Boolean).join(', '))}</b> est déjà prévu ${dup.week_id==null?'sur la prochaine liste':chOf(dup)==='drive'?'au Drive':'chez '+esc(chName(chOf(dup)))}.</span></div>` : '';
     go.innerHTML = ic('plus','s')+(dup?'Ajouter quand même':ch==='drive'?'Ajouter au Drive':'Ajouter chez '+esc(chName(ch)));
     go.disabled = !inp.value.trim();
@@ -1158,16 +1168,16 @@ function openAddSheet(prefill){
     hh.querySelectorAll('[data-hh]').forEach(b=>b.onclick=async()=>{
       const label=b.dataset.hh, ex=pendingFor(label);
       if(ex) await delItem(ex.id);
-      else { const h=state.household.find(x=>x.label===label); await addItem(label, h?.channel||'drive', h, null, true); }
+      else { const h=state.household.find(x=>x.label===label); await addItem(label, h?.channel||'drive', h, null, true, null, pick===undefined?undefined:dest()); }
       if(s.classList.contains('on')) refresh();
     });
   };
   s.querySelectorAll('[data-ach]').forEach(b=>b.onclick=()=>{ ch=b.dataset.ach; s.querySelectorAll('[data-ach]').forEach(x=>x.setAttribute('aria-checked', x===b)); refresh(); });
   const add=async()=>{
     const label=inp.value.trim(); if(!label) return;
-    const qty=qq.value.trim()||null, tw=targetWeek(ch);
+    const qty=qq.value.trim()||null, tw=dest();
     inp.value=''; qq.value=''; refresh();
-    if(!await addItem(label, ch, null, qty, true)) return;
+    if(!await addItem(label, ch, null, qty, true, null, tw)) return;
     if(!s.classList.contains('on')) return;
     s.querySelector('#mqdone').innerHTML=`« ${esc(label)} » ajouté sur ${esc(targetLabel(tw))}. Autre chose ?`;
     refresh(); inp.focus();
@@ -1940,8 +1950,9 @@ function bindMain(){
   };
 }
 // quiet : pas de message (la feuille d'ajout affiche le sien). Renvoie true si l'article est enregistré.
-async function addItem(label, ch, h, qty, quiet, source){
-  const t=targetWeek(ch);
+// week : la liste choisie (une semaine, ou null pour la prochaine liste) ; absente → la règle Drive / magasin.
+async function addItem(label, ch, h, qty, quiet, source, week){
+  const t=week===undefined ? targetWeek(ch) : week;
   const {data,error}=await sb.from('shopping_items').insert({week_id:t?t.id:null,label,qty:qty||h?.default_qty||null,category:h?.category||guessCat(label),channel:ch,status:'a_acheter',source:source||(h?'maison':'manque'),added_by:state.session.user.email}).select('id');
   if(error){ toast('Erreur : '+error.message); return false; }
   state.justAdded=data?.[0]?.id||null; if(!t) state.showNext=true;
