@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-I0EGBmjFfk3SegLMePC0U46miL+p7aLIpJ24OHxdPF4='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-tcJiNpfGsDnNm5CSCQwCMK8LOao3lIcx627kI27QKto='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -520,7 +520,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.11-1433';
+const APP_VERSION = '2026.10.11-1506';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -536,9 +536,13 @@ const CAT_ORDER = Object.keys(CATS);
 const FOYER_VIDE = { nom:'', personnes:[], claude:null, magasin:'Magasin', boucher:'Boucher', sport:{}, qui_mange:{} };
 let FOYER = FOYER_VIDE, QUI = [], QUI_NOM = {};   // QUI : [id, prénom] dans l'ordre du profil
 function setFoyer(p){
-  FOYER = Object.assign({}, FOYER_VIDE, p && typeof p==='object' ? p : {});
-  if(!Array.isArray(FOYER.personnes)) FOYER.personnes=[];
-  QUI = FOYER.personnes.map(x=>[x.id, x.prenom]); QUI_NOM = Object.fromEntries(QUI);
+  FOYER = Object.assign({}, FOYER_VIDE, p && typeof p==='object' && !Array.isArray(p) ? p : {});
+  // un profil mal formé (personne nulle, sans id, règles qui ne sont pas des objets) ne doit pas bloquer le chargement
+  const obj = (v)=>!!v && typeof v==='object' && !Array.isArray(v);
+  FOYER.personnes = Array.isArray(FOYER.personnes) ? FOYER.personnes.filter(x=>obj(x) && typeof x.id==='string' && x.id) : [];
+  if(!obj(FOYER.qui_mange)) FOYER.qui_mange={};
+  if(!obj(FOYER.sport)) FOYER.sport={};
+  QUI = FOYER.personnes.map(x=>[x.id, typeof x.prenom==='string' && x.prenom ? x.prenom : x.id]); QUI_NOM = Object.fromEntries(QUI);
 }
 const personne = (id)=>FOYER.personnes.find(x=>x.id===id);
 const decale = ()=>FOYER.personnes.find(x=>x.horaires_decales) || null;   // la personne au planning matin / soir / repos
@@ -638,7 +642,8 @@ const cap = (s)=>s ? s.charAt(0).toUpperCase()+s.slice(1) : s;
 // Claude écrit les propositions de menu, le contexte des semaines et les liens de recette après avoir lu des sites web :
 // une page piégée pourrait lui faire écrire du code. Tout est donc nettoyé au chargement (types, valeurs connues,
 // liens http/https seulement), puis échappé à l'affichage avec esc().
-const has = (o,k)=>o!=null && Object.prototype.hasOwnProperty.call(o,k);
+const has = (o,k)=>o!=null && Object.hasOwn(o,k);
+const own = (o,k)=>has(o,k) ? o[k] : undefined;   // o[k] seulement si k est une clé propre (jamais constructor, __proto__…)
 const isObj = (v)=>!!v && typeof v==='object' && !Array.isArray(v);
 const txt = (v,max=2000)=>typeof v==='string' ? v.slice(0,max) : typeof v==='number' && isFinite(v) ? String(v) : '';
 const txtOrNull = (v,max)=>txt(v,max) || null;
@@ -746,12 +751,12 @@ function guessCat(label){
 const DKEYS=['lun','mar','mer','jeu','ven','sam','dim'];
 const slotOrder = (s)=>s==='midi'?0:1;
 const mealSort = (a,b)=>a.day<b.day?-1:a.day>b.day?1:slotOrder(a.slot)-slotOrder(b.slot);
-function isPast(m){ const t=todayIso(); if(m.day!==t) return m.day<t; const n=new Date(); return n.getHours()*60+n.getMinutes() >= SLOT_END[m.slot]; }
+function isPast(m){ const t=todayIso(); if(m.day!==t) return m.day<t; const n=new Date(); return n.getHours()*60+n.getMinutes() >= (own(SLOT_END,m.slot)??SLOT_END.soir); }
 function weekOf(m){ return state.weeks.find(w=>w.id===m.week_id); }
 function ctxOf(m){ return weekOf(m)?.context || {}; }
 function findMeal(id){ return state.near.find(m=>m.id===id) || state.meals.find(m=>m.id===id); }
 function dishFor(m){ const t=String(m.title||'').toLowerCase(); return state.dishes.find(d=>d.name.toLowerCase()===t); }
-function kindLabel(m){ return m.kind==='recette' && dishFor(m)?.rating==='a_tester' ? 'Recette à tester' : (KIND[m.kind]||m.kind); }
+function kindLabel(m){ return m.kind==='recette' && dishFor(m)?.rating==='a_tester' ? 'Recette à tester' : (own(KIND,m.kind)||m.kind); }
 function mealMeta(m){ return kindLabel(m) + (m.prep_minutes?` · ${m.prep_minutes} min`:''); }
 function slotName(m){ return DAYS[dayIdx(m.day)].toLowerCase()+' '+m.slot; }
 function whenLabel(m){
@@ -949,7 +954,7 @@ function renderSemaine(){
   let h=`<header class="top"><h1>Semaine</h1>${w?weekNav():''}</header>`;
   if(!w) return h+`<main><div class="empty"><b>Aucune semaine au menu.</b></div>${prepBanner(true)}</main>`;
   const ctx=w.context||{};
-  h+=`<div class="subh"><b>${esc(rangeLabel(w))}</b>${STATUS[w.status]?`<span>· ${STATUS[w.status]}</span>`:''}${ctx.meteo?`<span class="row" style="gap:6px">${ic('cloud','s')}<span>${esc(ctx.meteo)}</span></span>`:''}</div>
+  h+=`<div class="subh"><b>${esc(rangeLabel(w))}</b>${own(STATUS,w.status)?`<span>· ${esc(own(STATUS,w.status))}</span>`:''}${ctx.meteo?`<span class="row" style="gap:6px">${ic('cloud','s')}<span>${esc(ctx.meteo)}</span></span>`:''}</div>
     <div class="subh" style="padding-bottom:10px"><span>Touchez un repas pour l'échanger avec un autre.</span></div><main>`;
   const t=todayIso();
   for(let i=0;i<7;i++){
@@ -1054,7 +1059,7 @@ function renderOrdered(w, got){
 }
 // Rayons : ceux qui ont encore des articles à prendre d'abord ; dans un rayon, les articles pris en bas
 function renderRayons(items, o={}){
-  const groups={}; for(const it of items){ (groups[CATS[it.category]?it.category:'autre'] ||= []).push(it); }
+  const groups={}; for(const it of items){ (groups[has(CATS,it.category)?it.category:'autre'] ||= []).push(it); }
   const cats=CAT_ORDER.filter(c=>groups[c]), left=c=>!o.ordered && groups[c].some(i=>i.status==='a_acheter');
   return [...cats.filter(left), ...cats.filter(c=>!left(c))].map(c=>{
     const xs=groups[c], todo=o.ordered?[]:xs.filter(i=>i.status==='a_acheter'), done=o.ordered?xs:xs.filter(i=>i.status!=='a_acheter');
@@ -1115,7 +1120,7 @@ function mealsLine(it){
   const ls=itemMeals(it); if(!ls.length) return '';
   return ls.length===1 ? `${shortTitle(ls[0].meal.title)} · ${whenShort(ls[0].meal).toLowerCase()}` : ls.map(l=>whenShort(l.meal).toLowerCase()).join(', ');
 }
-function plNote(it){ const x=state.placard.find(p=>fold(p.label)===fold(it.label)); return 'inventaire'+(x&&stk(x)!=='ok'?' : '+STOCK[stk(x)].toLowerCase():'')+(it.added_by&&it.added_by!=='claude'?', noté par '+prenom(it.added_by):''); }
+function plNote(it){ const x=state.placard.find(p=>fold(p.label)===fold(it.label)); return 'inventaire'+(x&&stk(x)!=='ok'?' : '+(own(STOCK,stk(x))||'').toLowerCase():'')+(it.added_by&&it.added_by!=='claude'?', noté par '+prenom(it.added_by):''); }
 function renderItem(it, o={}){
   const d=it.status==='achete' || (o.ordered && it.status==='a_acheter');
   const sub=[o.also ?? mealsLine(it), o.all?chName(chOf(it)):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null, it.source==='placard'?plNote(it):null].filter(Boolean).join(' · ');
@@ -1196,7 +1201,7 @@ function openAddSheet(prefill){
     const f=fold(q), xs=state.household.filter(x=>!f || fold(x.label).includes(f));
     const n=state.household.filter(x=>pendingFor(x.label)).length;
     s.querySelector('#mqhhn').textContent = f ? (xs.length?`${xs.length} sur ${state.household.length}`:'') : n ? `${n} déjà sur la liste` : '';
-    const groups={}; xs.forEach(x=>{ const c=CATS[x.category]?x.category:'autre'; (groups[c]=groups[c]||[]).push(x); });
+    const groups={}; xs.forEach(x=>{ const c=has(CATS,x.category)?x.category:'autre'; (groups[c]=groups[c]||[]).push(x); });
     hh.innerHTML = !xs.length ? `<p class="noted" style="margin-top:4px">Aucun classique ne correspond.</p>`
       : CAT_ORDER.filter(c=>groups[c]).map(c=>`<div class="hhg">${esc(CATS[c])}</div>`+groups[c].map(x=>{ const on=pendingFor(x.label);
         return `<div class="art"><div class="acts"><button class="a-ed" data-hhed="${x.id}" aria-label="Modifier le classique ${esc(x.label)}">${ic('edit','s')}Modifier</button><button class="a-del" data-hhdel="${x.id}" aria-label="Retirer ${esc(x.label)} des classiques">${ic('trash','s')}Retirer</button></div><div class="fg"><button class="hhr ${on?'on':''}" data-hh="${esc(x.label)}" aria-pressed="${!!on}"><span class="n">${esc(x.label)}</span>${on?'<span class="hs">Sur la liste</span>':''}<span class="p">${ic(on?'check':'plus','s')}</span></button></div></div>`; }).join('')).join('');
@@ -1330,9 +1335,7 @@ function renderReglages(){
   return `<header class="top"><div class="row"><button class="iconbtn" data-tab="${state.prevTab}" aria-label="Retour">${ic('left','s')}</button><h1>Réglages</h1></div></header><main>
     <h2 class="cat" style="margin-top:4px">Qui est dans le foyer</h2>
     ${state.members.map(m=>`<div class="irow"><div class="item"><span class="lab">${esc(m.display_name||m.email.split('@')[0])}<span class="by">${esc(m.email)}</span></span></div></div>`).join('')}
-    <label class="l" for="newname">Ajouter quelqu'un</label>
-    <div class="row"><input id="newname" placeholder="Prénom" style="max-width:38%"><input id="newmail" type="email" inputmode="email" class="grow" placeholder="email"></div>
-    <button class="primary btn" id="addmember" style="width:100%;margin-top:10px">Ajouter au foyer</button>
+    <p class="small" style="margin:6px 0 0">Pour ajouter quelqu'un, demande à Claude : le compte et l'accès au foyer se créent ensemble.</p>
     <h2 class="cat" style="margin-top:28px">Drive Leclerc</h2>
     <p class="small" style="margin:4px 0 0">${driveBase()?`Magasin : <b style="color:var(--text)">${esc(driveStore())}</b>. Collez une autre adresse pour changer.`:'Collez l\'adresse d\'une page de votre drive (elle contient « leclercdrive.fr/magasin-… ») pour les liens de recherche du mode Drive.'}</p>
     <div class="row" style="margin-top:8px"><input id="drurl" class="grow" type="url" inputmode="url" placeholder="https://fd…-courses.leclercdrive.fr/magasin-…" autocomplete="off"><button class="addbtn" id="drsave" aria-label="Enregistrer l'adresse du drive">${ic('check')}</button></div>
@@ -1360,7 +1363,7 @@ function renderReglages(){
 // été acheté. « Sans doute bientôt fini » : les fonds de placard du menu des 7 prochains jours (nom dans le titre du
 // repas) et ceux qui ont une fréquence d'achat dépassée, sauf s'ils ont été vérifiés il y a moins de 7 jours.
 const STOCK = { ok:'OK', bas:'Bas', fini:'Fini' };
-const stk = (x)=>x.stock||'ok';
+const stk = (x)=>has(STOCK,x.stock) ? x.stock : 'ok';
 function placardGroups(){ return [...PLACARD_GROUPES, ...new Set(state.placard.map(x=>x.placard).filter(g=>!PLACARD_GROUPES.includes(g)))]; }
 // Mot-clé d'un fond de placard dans le titre d'un repas (« Riz » → « Saumon, riz et épinards »), au singulier, sans accents
 const KW_SKIP=['cubes','huile','vinaigre','fond','sauce','herbes','levure','concentre','ail'];
@@ -1605,7 +1608,7 @@ function renderDrive(){
   h+=`<p class="noted">« Chercher » ouvre la recherche sur votre drive. Ajoutez le produit au panier, revenez ici et touchez « Dans le panier ».</p>`;
   let cat=null;
   for(const it of todo){
-    if(it.category!==cat){ cat=it.category; h+=`<h2 class="cat">${esc(CATS[cat||'autre']||'Autre')}</h2>`; }
+    if(it.category!==cat){ cat=it.category; h+=`<h2 class="cat">${esc(own(CATS,cat||'autre')||'Autre')}</h2>`; }
     const uses=itemMeals(it);
     h+=`<section class="dcard" aria-label="${esc(it.label)}"><div class="dh"><span class="dl">${esc(it.label)}</span>${it.qty?`<span class="dq">${esc(it.qty)}</span>`:''}</div>
       ${it.drive_product?`<div class="dp">Conseillé : <b>${esc(it.drive_product)}</b></div>`:''}
@@ -1956,6 +1959,8 @@ function openPwdSheet(){
   openSheet(`<div class="grab"></div><div class="sheet-h"><div><h2 id="pwt">Changer mon mot de passe</h2><div class="sub">${PWD_MIN} caractères minimum. Il servira sur tous tes appareils.</div></div>${closeBtn}</div>
     <form id="pwform" novalidate>
       <input type="email" autocomplete="username" value="${esc(state.session.user.email)}" readonly hidden>
+      <label class="l" for="np0">Mot de passe actuel</label>
+      <input id="np0" type="password" autocomplete="current-password" aria-describedby="pwerr">
       <label class="l" for="np1">Nouveau mot de passe</label>
       <input id="np1" type="password" autocomplete="new-password" minlength="${PWD_MIN}" aria-describedby="pwerr">
       <label class="l" for="np2">Confirme-le</label>
@@ -1964,17 +1969,19 @@ function openPwdSheet(){
       <div class="foot" style="margin-top:16px"><button id="pwok" type="submit" class="primary btn big">Enregistrer le mot de passe</button></div>
     </form>`);
   const err=(t)=>{ const e=$('#pwerr'); e.textContent=t; e.classList.toggle('hidden',!t); };
-  $('#np1').focus();
+  $('#np0').focus();
   $('#pwform').onsubmit=async(ev)=>{
     ev.preventDefault();
-    const a=$('#np1').value, b=$('#np2').value, ok=$('#pwok');
+    const cur=$('#np0').value, a=$('#np1').value, b=$('#np2').value, ok=$('#pwok');
+    if(!cur){ err('Saisis d\'abord ton mot de passe actuel.'); $('#np0').focus(); return; }
     if(a.length<PWD_MIN){ err(`Il faut au moins ${PWD_MIN} caractères (là, ${a.length}).`); $('#np1').focus(); return; }
     if(a!==b){ err('Les deux mots de passe ne sont pas identiques.'); $('#np2').focus(); return; }
     err(''); ok.disabled=true; ok.textContent='Enregistrement…';
-    const {error}=await sb.auth.updateUser({password:a});
+    const {error}=await sb.auth.updateUser({password:a, current_password:cur});
     ok.disabled=false; ok.textContent='Enregistrer le mot de passe';
     if(error){
       const m=error.message||'';
+      if(/current.?password|invalid_credentials|incorrect/i.test(m+' '+(error.code||''))){ err('Le mot de passe actuel n\'est pas le bon.'); $('#np0').focus(); return; }
       err(/different from the old|same_password/i.test(m) ? 'C\'est déjà ton mot de passe actuel : choisis-en un autre.'
         : /weak|pwned|known/i.test(m) ? 'Ce mot de passe est trop facile à deviner : choisis-en un autre.'
         : /reauthenticat|recent/i.test(m) ? 'Pour ta sécurité, déconnecte-toi, reconnecte-toi, puis recommence.'
@@ -2026,12 +2033,6 @@ function bindMain(){
   const pon=$('#pushon'); if(pon) pon.onclick=pushOn;
   const poff=$('#pushoff'); if(poff) poff.onclick=()=>pushOff();
   bindDriveUrl();
-  const am=$('#addmember'); if(am) am.onclick=async()=>{
-    const email=$('#newmail').value.trim().toLowerCase(); if(!email) return;
-    const display_name=$('#newname').value.trim()||null; const {error}=await sb.from('members').insert({email, display_name});
-    if(error){ toast('Erreur : '+error.message); return; }
-    toast('Bienvenue dans le foyer !'); await loadStatic(); render();
-  };
 }
 // quiet : pas de message (la feuille d'ajout affiche le sien). Renvoie true si l'article est enregistré.
 // week : la liste choisie (une semaine, ou null pour la prochaine liste) ; absente → la règle Drive / magasin.
@@ -2060,12 +2061,19 @@ function nextMonday(){ const d=new Date(); const dow=(d.getDay()+6)%7; d.setDate
 // Qui mange à la maison par défaut le jour k, selon le planning de la personne à horaires décalés. Les règles sont des
 // données du profil (FOYER.qui_mange, format dans 0014_foyer_profil.sql) : par personne et par créneau, une liste de
 // conditions dont une seule suffit. Même résultat que l'ancienne version écrite en dur : node scripts/test_qui_mange.mjs.
-function regleVraie(r, k, planning){ return (!r.jours || r.jours.includes(k)) && (!r.planning || r.planning.includes(planning)); }
+function regleVraie(r, k, planning){   // une règle mal formée (nulle, jours qui n'est pas une liste…) est fausse
+  if(!r || typeof r!=='object' || Array.isArray(r)) return false;
+  return (!r.jours || (Array.isArray(r.jours) && r.jours.includes(k))) && (!r.planning || (Array.isArray(r.planning) && r.planning.includes(planning)));
+}
 function quiParDefaut(profil, k, planning){
   const p=['matin','soir','repos'].includes(planning) ? planning : '';   // '' = non renseigné
   const out={midi:[], soir:[]};
-  for(const x of profil.personnes||[]) for(const slot of ['midi','soir'])
-    if((((profil.qui_mange||{})[x.id]||{})[slot]||[]).some(r=>regleVraie(r,k,p))) out[slot].push(x.id);
+  const lu=(o,c)=>o && typeof o==='object' && Object.hasOwn(o,c) ? o[c] : undefined;   // jamais constructor, __proto__…
+  for(const x of Array.isArray(profil.personnes) ? profil.personnes : []){
+    if(!x || typeof x!=='object' || typeof x.id!=='string') continue;   // personne nulle ou sans id : ignorée
+    for(const slot of ['midi','soir']){ const rs=lu(lu(profil.qui_mange,x.id),slot);
+      if(Array.isArray(rs) && rs.some(r=>regleVraie(r,k,p))) out[slot].push(x.id); }
+  }
   return out;
 }
 const planningDe = (j)=>{ const d=decale(), v=d ? j?.[d.id] : undefined; return PLANNINGS.includes(v) ? v : undefined; };   // weeks.context.jours.<j>.<id>
@@ -2153,7 +2161,7 @@ function renderWizard(){
         <dt>Le midi</dt><dd>${midis}</dd><dt>Le soir</dt><dd>${soirs?soirs+'<br>':''}les autres soirs : tout le monde</dd>
         <dt>Événements</dt><dd>${c.events.length?c.events.map(e=>`${fmtDate(e.day)} : ${esc(e.label)}`).join('<br>'):'aucun'}${c.invites?`<br>${esc(c.invites)}`:''}</dd>
         <dt>Cuisine longue OK</dt><dd>${c.cuisine_longue.length?c.cuisine_longue.map(k=>DAYN[k]).join(', '):'non'}</dd>
-        <dt>Repas commandé</dt><dd>${c.commande.souhaite?`${DAYN[c.commande.jour]||'?'} : ${esc(c.commande.quoi||'à voir')}`:'non'}</dd>
+        <dt>Repas commandé</dt><dd>${c.commande.souhaite?`${own(DAYN,c.commande.jour)||'?'} : ${esc(c.commande.quoi||'à voir')}`:'non'}</dd>
         ${c.envies?`<dt>Envies</dt><dd>${esc(c.envies)}</dd>`:''}${c.restes?`<dt>À écouler</dt><dd>${esc(c.restes)}</dd>`:''}
         <dt>Fruits et légumes</dt><dd>${esc({magasin:FOYER.magasin,drive:'Drive',mixte:'Les deux'}[c.fruits_legumes]||FOYER.magasin)}</dd>
         ${c.besoins_maison?`<dt>Maison</dt><dd>${esc(c.besoins_maison)}</dd>`:''}
@@ -2279,7 +2287,7 @@ function propAlerts(m, ctx, all){
   if(d.avis?.avis==='bof' && d.avis.le && d.avis.le>=addDays(m.day,-42)) out.push(`Noté « Bof » le ${fmtDate(d.avis.le)}`);
   if(m.equilibre && !NO_BAL.includes(m.kind)){ const miss=['proteine','legume','feculent'].filter(x=>!m.equilibre[x]); if(miss.length) out.push('Il manque '+miss.map(x=>({proteine:'une protéine',legume:'un légume',feculent:'un féculent'})[x]).join(' et ')); }
   const pr=protOf(m);
-  if(!['mixte','aucune','vege'].includes(pr) && all.some(x=>x!==m && cookedMeal(x) && Math.abs((new Date(x.day+'T00:00:00')-new Date(m.day+'T00:00:00'))/864e5)<=1 && protOf(x)===pr)) out.push(`${PROT[pr]} aussi la veille ou le lendemain`);
+  if(!['mixte','aucune','vege'].includes(pr) && all.some(x=>x!==m && cookedMeal(x) && Math.abs((new Date(x.day+'T00:00:00')-new Date(m.day+'T00:00:00'))/864e5)<=1 && protOf(x)===pr)) out.push(`${own(PROT,pr)||pr} aussi la veille ou le lendemain`);
   return out;
 }
 function propBanner(){
@@ -2344,9 +2352,9 @@ function renderRevDay(p,w,i,ro){
 function renderPropMeal(m,ctx,all){
   const d=dishInfo(m), al=propAlerts(m,ctx,all), e=m.equilibre, prev=state.propPrev?.content?.repas?.find(x=>x.day===m.day&&x.slot===m.slot);
   const changed=!!(m.modifie || (state.propPrev && (!prev || prev.title!==m.title)));
-  const kindt=(m.kind==='recette'||m.kind==='assemblage') && !d.found && m.kind==='recette' ? 'Recette à tester' : (KIND[m.kind]||m.kind);
+  const kindt=(m.kind==='recette'||m.kind==='assemblage') && !d.found && m.kind==='recette' ? 'Recette à tester' : (own(KIND,m.kind)||m.kind);
   let h=`<section class="pm${changed?' changed':''}"><div class="ph"><div><span class="slotl">${esc(m.slot)}${changed?` · <span style="color:var(--accent)">modifié</span>`:''}</span><h3>${esc(m.title)}</h3></div>${extLink(m.url, 'rec', ic('ext','s'), 'Recette : '+m.title)}</div>
-    <div class="tags">${int(m.prep_minutes,1)?`<span class="tag">${ic('clock','s')}${int(m.prep_minutes,1)} min</span>`:''}<span class="tag">${esc(kindt)}</span>${cookedMeal(m)&&PROT[protOf(m)]&&protOf(m)!=='mixte'?`<span class="tag">${esc(PROT[protOf(m)])}</span>`:''}</div>`;
+    <div class="tags">${int(m.prep_minutes,1)?`<span class="tag">${ic('clock','s')}${int(m.prep_minutes,1)} min</span>`:''}<span class="tag">${esc(kindt)}</span>${cookedMeal(m)&&own(PROT,protOf(m))&&protOf(m)!=='mixte'?`<span class="tag">${esc(own(PROT,protOf(m)))}</span>`:''}</div>`;
   if(m.pourquoi) h+=`<p class="why">${esc(m.pourquoi)}</p>`;
   if(e && !NO_BAL.includes(m.kind)) h+=`<div class="bal">${[['proteine','Protéine'],['legume','Légume'],['feculent','Féculent']].map(([x,l])=>`<div class="${e[x]?'':'miss'}"><span>${l}</span><b>${esc(e[x]||'manque')}</b></div>`).join('')}</div>`;
   if(cookedMeal(m)) h+=`<div class="hist">${ic('clock','s')}<span>${histText(d)}</span></div>`;
@@ -2376,12 +2384,12 @@ function renderRevWeek(p,w,ro){
   const prots=count(protOf), bases=count(baseOf);
   const recettes=all.filter(m=>m.kind==='recette').length, news=cooked.filter(m=>!dishInfo(m).found).length, mins=cooked.reduce((s,m)=>s+(m.prep_minutes||0),0);
   const alerts=[]; for(const m of cooked) for(const a of propAlerts(m,ctx,all)) alerts.push(`${DAYN[DKEYS[dayIdx(m.day)]].slice(0,3)}. ${m.slot} : ${a}`);
-  for(const [b,n] of bases) if(n>2 && !['autre','sans'].includes(b)) alerts.push(`${BASES[b]} ${n} fois dans la semaine`);
-  for(const [pr,n] of prots) if(n>=3 && !['mixte','vege','aucune'].includes(pr)) alerts.push(`${PROT[pr]} ${n} fois dans la semaine`);
+  for(const [b,n] of bases) if(n>2 && !['autre','sans'].includes(b)) alerts.push(`${own(BASES,b)||b} ${n} fois dans la semaine`);
+  for(const [pr,n] of prots) if(n>=3 && !['mixte','vege','aucune'].includes(pr)) alerts.push(`${own(PROT,pr)||pr} ${n} fois dans la semaine`);
   h+=`<h3 class="cat" style="margin-top:22px">L'équilibre de la semaine</h3>
     <div class="stats"><div><b>${all.length}</b><span>repas prévus</span></div><div><b>${recettes}</b><span>recette${recettes>1?'s':''} avec lien</span></div><div><b>${cooked.length?Math.round(mins/cooked.length):0}</b><span>min en moyenne</span></div></div>
-    <div class="kv"><span>Protéines</span><span class="tags">${prots.map(([k,n])=>`<span class="tag sm${n>=3&&!['mixte','vege','aucune'].includes(k)?' ink':''}">${esc(PROT[k]||k)} ×${n}</span>`).join('')||'—'}</span></div>
-    <div class="kv"><span>Féculents</span><span class="tags">${bases.map(([k,n])=>`<span class="tag sm${n>2&&!['autre','sans'].includes(k)?' ink':''}">${esc(BASES[k]||k)} ×${n}</span>`).join('')||'—'}</span></div>
+    <div class="kv"><span>Protéines</span><span class="tags">${prots.map(([k,n])=>`<span class="tag sm${n>=3&&!['mixte','vege','aucune'].includes(k)?' ink':''}">${esc(own(PROT,k)||k)} ×${n}</span>`).join('')||'—'}</span></div>
+    <div class="kv"><span>Féculents</span><span class="tags">${bases.map(([k,n])=>`<span class="tag sm${n>2&&!['autre','sans'].includes(k)?' ink':''}">${esc(own(BASES,k)||k)} ×${n}</span>`).join('')||'—'}</span></div>
     <div class="kv"><span>Nouveautés</span><span>${news?`${news} plat${news>1?'s':''} jamais servi${news>1?'s':''}`:'aucune, que du connu'}</span></div>
     ${alerts.length?`<div class="alerts" style="margin-top:12px">${alerts.map(a=>`<div>${ic('alert','xs')}<span>${esc(a)}</span></div>`).join('')}</div>`:`<p class="sub" style="margin-top:10px">Rien à signaler sur l'ensemble.</p>`}`;
   if(ro){ if(g.remarque) h+=`<div class="verdict"><h3>Remarque sur l'ensemble</h3><p style="margin:0">${esc(g.remarque)}</p></div>`; return h+`<div class="wiz-foot"><button id="rclose2" class="outline">Fermer</button></div>`; }
