@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-U8aimRkndaynfTRgx37Blbt5h1lbE7tiR8BSj158bPM='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-/qR2ncgKTkKO5ePXW0s/qNw1xUo/P0s7Xz4tf4T5RcU='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -236,6 +236,11 @@ main.courses .find input{background:var(--card);border-color:var(--line)}
 .dstat .dsi{width:36px;height:36px;border-radius:18px;background:var(--accent-soft);color:var(--accent-soft-text);display:grid;place-items:center;flex:none}
 .dstat b{display:block;font-size:16px;font-weight:600}
 .dstat .grow span{font-size:14px;color:var(--muted)}
+button.dstat{width:100%;border:0;text-align:left;color:inherit}
+button.dstat>svg.i{color:var(--muted)}
+.ordered{display:flex;flex-direction:column;gap:12px}
+.ordered .olist{display:flex;flex-direction:column;gap:12px;opacity:.8}
+.osub{font-size:15px;font-weight:600;color:var(--muted);margin:6px 4px -4px}
 /* La prochaine liste */
 .next{background:var(--card);border:2px solid var(--accent);border-radius:20px;overflow:hidden;padding-bottom:4px}
 .next-h{display:flex;align-items:flex-start;gap:12px;padding:14px 12px 10px 16px}
@@ -243,6 +248,8 @@ main.courses .find input{background:var(--card);border-color:var(--line)}
 .next-h h2{margin:0;font-size:18px;font-weight:600}
 .next-h .nc{font-size:14px;font-weight:600;color:var(--accent-soft-text)}
 .next-h p{margin:3px 0 0;font-size:14px;line-height:1.4;color:var(--muted)}
+.next .nempty{margin:0 16px 4px;font-size:15px;color:var(--muted)}
+.nadd{display:flex;align-items:center;gap:8px;margin:8px 12px 10px;min-height:44px;padding:0 16px;border-radius:14px;border:0;background:var(--accent-soft);color:var(--accent-soft-text);font-weight:600;font-size:15px}
 .next .nsub{font-size:13px;font-weight:600;color:var(--muted);margin:8px 16px 2px}
 .nextlink{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border-radius:18px;border:1px dashed var(--outline);background:transparent;text-align:left}
 .nextlink b{display:block;font-size:15px}
@@ -498,7 +505,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.11-1101';
+const APP_VERSION = '2026.10.11-1328';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -594,7 +601,7 @@ const state = {
   weeks:[], weekIdx:0, meals:[], items:[], backlog:[], household:[], placard:[], members:[],
   near:[], dishes:[], feedback:[], swapMarks:{}, push:null, homeAlt:null,
   filter: localStorage_get('filter') || 'drive', view: localStorage_get('view') || 'rayon', q:'', findOpen:false,
-  showNext:false, justAdded:null, invQ:'',
+  showNext:false, showOrder:false, justAdded:null, invQ:'',
   email: localStorage_get('email') || '', err:'', busy:false,
   draft:null, wiz:null, drive:false, settings:{}, driveDone:false,
   proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[]
@@ -821,7 +828,7 @@ function render(){
 function tabBtn(id,icon,label,badge){
   return `<button data-tab="${id}" class="${state.tab===id?'on':''}" ${state.tab===id?'aria-current="page"':''}><span class="ico">${ic(icon)}${badge?`<span class="badge">${badge}</span>`:''}</span>${label}</button>`;
 }
-function coursesLeft(){ return state.items.filter(i=>i.status==='a_acheter').length; }
+function coursesLeft(){ return state.items.filter(stillToBuy).length; }
 function avatarBtn(){ return `<button class="avatar" data-tab="reglages" aria-label="Réglages du foyer">${esc((moi()||'?').charAt(0).toUpperCase())}</button>`; }
 
 // Écran de connexion neutre : aucun nom (le profil du foyer n'est lisible qu'une fois connecté), pas d'inscription.
@@ -984,14 +991,20 @@ function renderCourses(){
   if(findOn) h+=`<div class="find" role="search">${ic('search','s')}<input id="find" type="search" value="${esc(state.q)}" placeholder="Chercher dans la liste…" aria-label="Chercher dans la liste" autocomplete="off" enterkeyhint="search">${state.q?`<button class="clr" id="findclr" aria-label="Effacer la recherche">${ic('x','s')}</button>`:''}</div>`;
   if(state.q.trim()) return h+renderFound(all)+'</main>'+addBar();
   h+=`<div class="stores" role="group" aria-label="Magasin">${CHANNELS.map(c=>{
-    const xs=all.filter(i=>chOf(i)===c), left=xs.filter(i=>i.status==='a_acheter').length;
-    return `<button data-filter="${c}" aria-pressed="${c===ch}">${ic(chIcon(c))}<b>${esc(chName(c))}</b><span>${left?left+' à prendre':xs.length?'tout est pris':'rien à prendre'}</span></button>`; }).join('')}</div>`;
+    const xs=all.filter(i=>chOf(i)===c), left=xs.filter(stillToBuy).length;
+    const st=c==='drive' && driveOrdered(w) && !left ? 'commande passée' : left?left+' à prendre':xs.length?'tout est pris':'rien à prendre';
+    return `<button data-filter="${c}" aria-pressed="${c===ch}">${ic(chIcon(c))}<b>${esc(chName(c))}</b><span>${st}</span></button>`; }).join('')}</div>`;
   h+=stowBanner();
-  const prominent = ch==='drive' && !targetWeek('drive');   // commande drive passée : la prochaine liste d'abord
-  if(ch==='drive') h+=renderDriveHead(w)+renderDue();
+  // commande drive passée : la prochaine liste d'abord, puis la commande repliée
+  const ordered = ch==='drive' && driveOrdered(w), prominent = ch==='drive' && (ordered || !targetWeek('drive'));
   if(prominent) h+=renderNext(true);
+  if(ch==='drive') h+=(ordered?'':renderDriveHead(w))+renderDue();
   if(!w) return h+`<div class="empty">Pas encore de liste de courses cette semaine.</div>`+(prominent?'':renderNext(false))+'</main>'+addBar();
-  const items=all.filter(i=>chOf(i)===ch);
+  const chItems=all.filter(i=>chOf(i)===ch);
+  if(ordered) h+=renderOrdered(w, chItems.filter(i=>!stillToBuy(i)));
+  const items=ordered ? chItems.filter(stillToBuy) : chItems;   // ce qui reste à prendre hors commande (rare)
+  if(ordered && !items.length) return h+'</main>'+addBar();
+  if(ordered) h+=`<h2 class="osub">Pas dans la commande</h2>`;
   const todo=items.filter(i=>i.status==='a_acheter'), done=items.filter(i=>i.status==='achete');
   const linked=items.some(i=>itemMeals(i).length), byMeal=linked && state.view==='repas';
   if(items.length){
@@ -1009,11 +1022,7 @@ function renderCourses(){
 function addBar(){ return `<div class="addbar"><button class="addpill" id="addopen">Il manque quelque chose ?<span class="grow"></span><span class="plus">${ic('plus')}</span></button></div>`; }
 // Drive : le panier Leclerc tant que la commande n'est pas passée, puis la date de commande
 function renderDriveHead(w){
-  if(!w) return '';
-  if(driveOrdered(w)){
-    const n=state.items.filter(i=>chOf(i)==='drive' && i.drive_cart==='mis').length;
-    return `<div class="dstat"><span class="dsi">${ic('check','s')}</span><span class="grow"><b>${esc(orderedLabel(w))}</b>${n?`<span>${n===1?'1 article commandé':n+' articles commandés'}</span>`:''}</span></div>`;
-  }
+  if(!w || driveOrdered(w)) return '';
   const t=targetWeek('drive'); if(!t || t.id!==w.id) return '';
   const dl=driveList(); let h='';
   if(dl.length){ const n=dl.filter(i=>i.drive_cart).length;
@@ -1021,13 +1030,20 @@ function renderDriveHead(w){
       <span class="lbar"><i style="width:${Math.round(n/dl.length*100)}%"></i></span><span class="lgo">${n?'Continuer le panier':'Remplir le panier'}${ic('right','s')}</span></button>`; }
   return h+`<p class="dnote"><span class="dot"></span><span><b>Commande pas encore passée.</b> Vos ajouts Drive vont sur cette liste.</span></p>`;
 }
+// Commande drive passée : ce qui est au panier ou coché tient dans une carte, dépliée à la demande
+function renderOrdered(w, got){
+  const n=got.length, open=state.showOrder && n>0;
+  let h=`<section class="ordered ${open?'open':''}"><button class="dstat" id="ordertoggle" aria-expanded="${open}" ${n?'':'disabled'}><span class="dsi">${ic('check','s')}</span><span class="grow"><b>${esc(orderedLabel(w))}</b><span>${n===0?'Rien de commandé dans l\'app':n===1?'1 article commandé':n+' articles commandés'}${n?(open?' · masquer':' · voir le détail'):''}</span></span>${n?ic(open?'up':'down','s'):''}</button>`;
+  if(open) h+=`<div class="olist">${renderRayons(got,{ordered:true})}</div>`;
+  return h+'</section>';
+}
 // Rayons : ceux qui ont encore des articles à prendre d'abord ; dans un rayon, les articles pris en bas
 function renderRayons(items, o={}){
   const groups={}; for(const it of items){ (groups[CATS[it.category]?it.category:'autre'] ||= []).push(it); }
-  const cats=CAT_ORDER.filter(c=>groups[c]), left=c=>groups[c].some(i=>i.status==='a_acheter');
+  const cats=CAT_ORDER.filter(c=>groups[c]), left=c=>!o.ordered && groups[c].some(i=>i.status==='a_acheter');
   return [...cats.filter(left), ...cats.filter(c=>!left(c))].map(c=>{
-    const xs=groups[c], todo=xs.filter(i=>i.status==='a_acheter'), done=xs.filter(i=>i.status!=='a_acheter');
-    return `<section class="rayon" aria-label="${esc(CATS[c])}"><div class="rh"><span class="tile t-${CAT_TONE[c]}">${ic(CAT_ICON[c],'s')}</span><h2>${esc(CATS[c])}</h2><span class="rc">${todo.length?`${todo.length} sur ${xs.length}`:'tout est pris'}</span></div>${[...todo,...done].map(it=>renderItem(it,o)).join('')}</section>`;
+    const xs=groups[c], todo=o.ordered?[]:xs.filter(i=>i.status==='a_acheter'), done=o.ordered?xs:xs.filter(i=>i.status!=='a_acheter');
+    return `<section class="rayon" aria-label="${esc(CATS[c])}"><div class="rh"><span class="tile t-${CAT_TONE[c]}">${ic(CAT_ICON[c],'s')}</span><h2>${esc(CATS[c])}</h2><span class="rc">${o.ordered?xs.length:todo.length?`${todo.length} sur ${xs.length}`:'tout est pris'}</span></div>${[...todo,...done].map(it=>renderItem(it,o)).join('')}</section>`;
   }).join('');
 }
 // Recherche : tous magasins, articles pris compris ; sur le nom, la quantité et les repas liés, sans tenir compte des accents
@@ -1067,12 +1083,14 @@ function renderNext(prominent){
   if(!prominent && !state.showNext) return `<button class="nextlink" id="nexttoggle" aria-expanded="false">${ic('note')}<span class="grow"><b>Prochaine liste</b><span>${n===1?'1 article noté':n+' articles notés'} pour la commande suivante</span></span>${ic('down','s')}</button>`;
   let h=`<section class="next" aria-labelledby="nextt"><div class="next-h">${ic('note')}<div class="grow"><div class="row"><h2 id="nextt" class="grow">Prochaine liste</h2><span class="nc">${n===0?'vide':n===1?'1 article':n+' articles'}</span>${prominent?'':`<button class="iconbtn round sm" id="nexttoggle" aria-expanded="true" aria-label="Replier la prochaine liste">${ic('up','s')}</button>`}</div>
     <p>${prominent?'Vos ajouts Drive arrivent ici. ':''}Claude les reprend pour la prochaine commande.</p></div></div>`;
+  if(prominent && !n) h+=`<p class="nempty">Rien de noté pour l'instant.</p>`;
   const mixed=new Set(bl.map(chOf)).size>1;
   for(const c of CHANNELS){
     const xs=bl.filter(i=>chOf(i)===c); if(!xs.length) continue;
     if(mixed) h+=`<h3 class="nsub">${esc(chName(c))}</h3>`;
     h+=xs.map(it=>swipeRow(it, `<div class="tick"><span class="al"><span class="an">${esc(it.label)}</span>${it.added_by?`<span class="am">noté par ${esc(prenom(it.added_by))}</span>`:''}</span>${it.qty?`<span class="aq">${esc(it.qty)}</span>`:''}</div>`)).join('');
   }
+  if(prominent) h+=`<button class="nadd" id="nextadd">${ic('plus','s')}Noter un article</button>`;
   return h+'</section>';
 }
 function swipeRow(it, inner){
@@ -1084,7 +1102,7 @@ function mealsLine(it){
 }
 function plNote(it){ const x=state.placard.find(p=>fold(p.label)===fold(it.label)); return 'inventaire'+(x&&stk(x)!=='ok'?' : '+STOCK[stk(x)].toLowerCase():'')+(it.added_by&&it.added_by!=='claude'?', noté par '+prenom(it.added_by):''); }
 function renderItem(it, o={}){
-  const d=it.status==='achete';
+  const d=it.status==='achete' || (o.ordered && it.status==='a_acheter');
   const sub=[o.also ?? mealsLine(it), o.all?chName(chOf(it)):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null, it.source==='placard'?plNote(it):null].filter(Boolean).join(' · ');
   const qty=o.q ?? it.qty;
   return swipeRow(it, `<button class="tick ${d?'got':''}" data-item="${it.id}" aria-pressed="${d}"><span class="ck">${d?ic('check','xs'):''}</span><span class="al"><span class="an">${state.q?markQ(it.label):esc(it.label)}</span>${sub?`<span class="am">${esc(sub)}</span>`:''}</span>${qty?`<span class="aq">${esc(qty)}</span>`:''}</button>`);
@@ -1176,7 +1194,7 @@ function renderByMeal(items){
   let h='';
   for(const m of state.meals.slice().sort(mealSort)){
     const xs=items.filter(i=>itemMeals(i).some(l=>l.meal.id===m.id)); if(!xs.length) continue;
-    const left=xs.filter(i=>i.status==='a_acheter').length;
+    const left=xs.filter(stillToBuy).length;
     h+=`<section class="mcard" aria-label="${esc(cap(whenLong(m)))} : ${esc(m.title)}"><div class="mcard-h"><button class="mhb" data-usemeal="${m.id}">
       <div class="ew">${esc(whenLong(m))} <span>· ${left?(left===1?'1 à prendre':left+' à prendre'):'tout est pris'}</span></div><div class="mt">${esc(m.title)}</div></button>
       ${extLink(m.url, 'reclink', `${ic('book','s')}Recette`, 'Ouvrir la recette : '+m.title)}
@@ -1889,6 +1907,8 @@ function bindMain(){
   document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>rateMeal(b.dataset.id, b.dataset.rate));
   const dg=$('#drivego'); if(dg) dg.onclick=()=>{ state.drive=true; render(); window.scrollTo(0,0); };
   const nt=$('#nexttoggle'); if(nt) nt.onclick=()=>{ state.showNext=!state.showNext; render(); };
+  const ot=$('#ordertoggle'); if(ot) ot.onclick=()=>{ state.showOrder=!state.showOrder; render(); };
+  const na=$('#nextadd'); if(na) na.onclick=()=>openAddSheet('');
   const ao=$('#addopen'); if(ao) ao.onclick=()=>openAddSheet();
   bindInventaire(); bindDue();
   const fb=$('#findbtn'); if(fb) fb.onclick=()=>{ const on=!(state.findOpen||state.q); state.findOpen=on; state.q=''; render(); if(on) $('#find')?.focus(); };
