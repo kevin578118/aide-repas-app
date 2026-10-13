@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-tcJiNpfGsDnNm5CSCQwCMK8LOao3lIcx627kI27QKto='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-zvxbgYxIIJIW2ex4JK8ua5vnCzxzMRaeQ303/+7uAfA='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -520,7 +520,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.11-1506';
+const APP_VERSION = '2026.10.13-1859';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -976,7 +976,7 @@ function mealRow(m){
   const past=isPast(m), mark=state.swapMarks[m.id];
   const inner=`<span class="t">${esc(m.title)}</span><span class="m">${esc(mealMeta(m))}${mark?` · <span class="swapped">${ic('swap','xs')} vient de ${esc(mark)}</span>`:''}</span>`;
   return `<div class="meal${past?' past':''}"><span class="slot">${esc(m.slot)}</span>
-    ${past?`<div class="mb">${inner}</div>`:`<button class="mb" data-swap="${m.id}">${inner}</button>`}
+    <button class="mb" data-swap="${m.id}">${inner}</button>
     ${extLink(m.url, 'rec', ic('ext','s'), 'Recette : '+m.title)}
   </div>`;
 }
@@ -1725,10 +1725,11 @@ function openEditSheet(id){
   };
 }
 
-// Échanger un repas avec n'importe quel autre repas de la même semaine
+// Échanger un repas avec n'importe quel autre repas de la même semaine, passés compris (correction après coup)
 function swapWarnings(a, b){
-  // a va sur le créneau de b, et b sur celui de a
+  // a va sur le créneau de b, et b sur celui de a ; pas d'avertissement pour corriger ce qui a déjà été mangé
   const ctx=ctxOf(a), out=[];
+  if(isPast(a) || isPast(b)) return out;
   for(const [m, day, slot] of [[a,b.day,b.slot],[b,a.day,a.slot]]){
     if(NO_COOK.includes(m.kind) || m.kind==='restes') continue;
     const cons=constraints(day,slot,ctx), mins=m.prep_minutes||0, name=shortTitle(m.title), k=DKEYS[dayIdx(day)];
@@ -1744,7 +1745,7 @@ async function openSwap(id){
   openSheet(`<div class="grab"></div><div class="sheet-h"><div><h2>Échanger avec un autre repas</h2><div class="sub">Chargement…</div></div>${closeBtn}</div>`);
   const {data,error}=await sb.from('meals').select('*').eq('week_id',src.week_id);
   if(error){ closeSheet(); toast('Erreur : '+error.message); return; }
-  const pool=(data||[]).map(cleanMeal).filter(m=>m.id!==src.id && !isPast(m)).sort(mealSort);
+  const pool=(data||[]).map(cleanMeal).filter(m=>m.id!==src.id).sort(mealSort);
   let sel=null;
   const draw=()=>{
     const s=$('#sheet'), y=s.scrollTop, tgt=pool.find(m=>m.id===sel);
@@ -1755,9 +1756,9 @@ async function openSwap(id){
           <span class="od">${DAYS[dayIdx(o.day)].slice(0,3)} ${new Date(o.day+'T00:00:00').getDate()}<br>${esc(o.slot)}</span>
           <span class="ot">${esc(o.title)}</span>
           <span class="radio">${on?ic('check','xs'):''}</span>
-          <span class="om">${esc([mealMeta(o), ...cons].join(' · '))}</span>
+          <span class="om">${esc(isPast(o)?['déjà passé', mealMeta(o)].join(' · '):[mealMeta(o), ...cons].join(' · '))}</span>
           ${warns.map(x=>`<span class="warn">${ic('alert','xs')}<span>${esc(x)}</span></span>`).join('')}
-        </button>`; }).join('')}</div>`:`<p class="sub">Pas d'autre repas à venir cette semaine.</p>`}
+        </button>`; }).join('')}</div>`:`<p class="sub">Pas d'autre repas cette semaine.</p>`}
       <div class="foot"><p class="sub center" style="margin:0">La liste de courses ne change pas : les ingrédients suivent leur plat.</p>
         <button class="primary btn big" id="swapgo" ${tgt?'':'disabled'}>${ic('swap','s')}${tgt?`Échanger ${esc(slotName(src))} et ${esc(slotName(tgt))}`:'Choisissez un repas'}</button></div>`;
     s.scrollTop=y;
@@ -1779,8 +1780,9 @@ async function doSwap(a0, b0){
   if(error){ toast('Échange impossible : '+error.message); return; }
   await swapLinks(A, B);
   applyLocal(rows); state.swapMarks[A.id]=slotName(B); state.swapMarks[B.id]=slotName(A); render();
-  // Les autres membres sont prévenus une fois le délai « Annuler » passé (rien n'est envoyé si on annule)
-  const notif=setTimeout(()=>sb.functions.invoke('notify',{body:{kind:'echange', a:A.id, b:B.id}}).catch(()=>{}), 6500);
+  // Les autres membres sont prévenus une fois le délai « Annuler » passé (rien n'est envoyé si on annule),
+  // sauf pour une simple correction entre deux repas déjà passés
+  const notif=isPast(A)&&isPast(B) ? null : setTimeout(()=>sb.functions.invoke('notify',{body:{kind:'echange', a:A.id, b:B.id}}).catch(()=>{}), 6500);
   snack(`${cap(slotName(A))} et ${slotName(B)} échangés`, 'Annuler', async()=>{
     clearTimeout(notif);
     const back=[{...slot(A),...content(A)}, {...slot(B),...content(B)}];
