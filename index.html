@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-UmqDl35SiVmTB3D9Wfa7XOPKJoovYRPtsWuEo2uSDfQ='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-KSRm/0hMvbS+hBPLTslxzHfOZ/+7PvvwZ8ZTS4GpiGk='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -530,7 +530,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.14-2209';
+const APP_VERSION = '2026.10.14-2215';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1766,14 +1766,16 @@ function openRemindSheet(ids){
     <div class="rpl" role="group" aria-labelledby="rpal">${cands.map(i=>`<button data-rpi="${i.id}" aria-pressed="${sel.has(i.id)}"><span class="ck">${sel.has(i.id)?ic('check','xs'):''}</span><span>${esc(i.label)}</span>${i.qty?`<span class="aq">${esc(i.qty)}</span>`:''}</button>`).join('')}</div>
     <div class="l" id="rpdl">Quel jour</div>
     <div class="chips" role="radiogroup" aria-labelledby="rpdl" style="margin-top:0">${days.map(d=>`<button role="radio" data-rpd="${d}" aria-checked="${d===day}" class="${d===day?'on':''}">${esc(dayChip(d))}</button>`).join('')}</div>
-    <label class="l" for="rpt">À quelle heure</label><input id="rpt" type="time" step="300" value="${time}" style="max-width:160px">
+    <label class="l" for="rpt">À quelle heure</label><input id="rpt" type="time" step="900" value="${time}" style="max-width:160px"><p class="noted" id="rpq" style="margin-top:6px">Les rappels partent au quart d'heure (h 00, h 15, h 30, h 45).</p>
     <div class="l" id="rpwl">Pour qui</div>
     <div class="chips" role="group" aria-labelledby="rpwl" style="margin-top:0">${state.members.map(m=>{ const e=m.email.toLowerCase(); return `<button data-rpw="${esc(e)}" aria-pressed="${to.has(e)}" class="${to.has(e)?'on':''}">${to.has(e)?ic('check','xs'):''}${esc(prenom(e))}</button>`; }).join('')}</div>
     <p class="noted" id="rpmsg"></p>
     <div class="foot" style="margin-top:16px"><button id="rpok" class="primary btn big">${ic('bell','s')} Programmer le rappel</button>
       ${cands.some(i=>sel.has(i.id) && remindOf(i))?`<button id="rpoff" class="btn" style="background:none;color:var(--danger)">Retirer le rappel</button>`:''}</div>`);
   const sheet=$('#sheet'), msg=sheet.querySelector('#rpmsg');
-  const when=()=>{ const v=sheet.querySelector('#rpt').value; if(!/^\d{2}:\d{2}$/.test(v)) return null; const d=new Date(day+'T'+v+':00'); return isFinite(d)?d:null; };
+  const when=()=>{ const v=sheet.querySelector('#rpt').value; if(!/^\d{2}:\d{2}$/.test(v)) return null; const d=new Date(day+'T'+v+':00'); if(!isFinite(d)) return null;
+    const q=d.getMinutes()%15; if(q) d.setMinutes(d.getMinutes()+15-q);   // la tâche planifiée passe au quart d'heure
+    return d; };
   const hint=()=>{ msg.innerHTML = to.has(me) && state.push!=='on' ? 'Les notifications ne sont pas activées sur ce téléphone : à faire dans Réglages pour recevoir le rappel.' : ''; };
   sheet.querySelectorAll('[data-rpi]').forEach(b=>b.onclick=()=>{ const id=b.dataset.rpi, on=!sel.has(id); on?sel.add(id):sel.delete(id); b.setAttribute('aria-pressed',on); b.querySelector('.ck').innerHTML=on?ic('check','xs'):''; });
   sheet.querySelectorAll('[data-rpd]').forEach(b=>b.onclick=()=>{ day=b.dataset.rpd; sheet.querySelectorAll('[data-rpd]').forEach(x=>{ x.setAttribute('aria-checked',x===b); x.classList.toggle('on',x===b); }); });
