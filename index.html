@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-zvxbgYxIIJIW2ex4JK8ua5vnCzxzMRaeQ303/+7uAfA='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-UmqDl35SiVmTB3D9Wfa7XOPKJoovYRPtsWuEo2uSDfQ='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -224,7 +224,17 @@ main.courses .find input{background:var(--card);border-color:var(--line)}
 .a-ed{background:var(--line2)}
 .a-del{background:var(--danger);color:var(--bg)}
 .art .fg{position:relative;background:var(--card);transition:transform .2s;touch-action:pan-y}
-.art.open .fg,.art .acts:focus-within+.fg{transform:translateX(-168px)}
+.art.open .fg,.art .acts:focus-within+.fg{transform:translateX(calc(-84px * var(--n,2)))}
+.a-rp{background:var(--accent-soft);color:var(--accent-soft-text)}
+.am.rp{color:var(--accent-soft-text);font-weight:600}
+.am.rp svg{vertical-align:-2px}
+.rh .rpb{width:36px;height:36px;min-height:0;padding:0;display:grid;place-items:center;border-radius:10px;background:none;color:var(--muted)}
+.rpl{display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:14px;overflow:hidden;max-height:240px;overflow-y:auto}
+.rpl button{display:flex;align-items:center;gap:12px;min-height:46px;padding:6px 14px;background:none;border-radius:0;text-align:left;font-size:15px;border-top:1px solid var(--line2)}
+.rpl button:first-child{border-top:0}
+.rpl button .ck{width:22px;height:22px}
+.rpl button[aria-pressed="true"] .ck{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.rpl .aq{margin-left:auto;color:var(--muted);font-size:14px}
 .art.new .fg{background:var(--accent-soft)}
 .tick{width:100%;display:flex;align-items:center;gap:14px;padding:10px 16px;min-height:58px;background:none;border-radius:0;text-align:left}
 .ck{width:26px;height:26px;border-radius:13px;border:2px solid var(--cb);flex:none;display:grid;place-items:center}
@@ -520,7 +530,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.13-1859';
+const APP_VERSION = '2026.10.14-2209';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -563,6 +573,7 @@ const MONTHS_L = ['janvier','février','mars','avril','mai','juin','juillet','ao
 
 const ICONS = {
   cloche:'<path d="M3.5 17.5h17"/><path d="M5 17.5a7 7 0 0 1 14 0"/><path d="M12 8v2.5M10.5 8h3"/>',
+  bell:'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
   cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   bag:'<path d="M5 8.5h14l-1.2 11.5H6.2L5 8.5z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>',
   clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
@@ -1036,7 +1047,7 @@ function renderCourses(){
   else if(!todo.length) h+=`<div class="empty"><b>Tout est pris, bravo !</b></div>`;
   h+= byMeal ? renderByMeal(items) : renderRayons(items);
   if(!prominent) h+=renderNext(false);
-  if(items.length && !localStorage_get('swiped')) h+=`<p class="swhint">Glissez un article vers la gauche pour le modifier ou le supprimer.</p>`;
+  if(items.length && !localStorage_get('swiped')) h+=`<p class="swhint">Glissez un article vers la gauche pour un rappel, le modifier ou le supprimer.</p>`;
   return h+'</main>'+addBar();
 }
 function addBar(){ return `<div class="addbar"><button class="addpill" id="addopen">Il manque quelque chose ?<span class="grow"></span><span class="plus">${ic('plus')}</span></button></div>`; }
@@ -1063,7 +1074,7 @@ function renderRayons(items, o={}){
   const cats=CAT_ORDER.filter(c=>groups[c]), left=c=>!o.ordered && groups[c].some(i=>i.status==='a_acheter');
   return [...cats.filter(left), ...cats.filter(c=>!left(c))].map(c=>{
     const xs=groups[c], todo=o.ordered?[]:xs.filter(i=>i.status==='a_acheter'), done=o.ordered?xs:xs.filter(i=>i.status!=='a_acheter');
-    return `<section class="rayon" aria-label="${esc(CATS[c])}"><div class="rh"><span class="tile t-${CAT_TONE[c]}">${ic(CAT_ICON[c],'s')}</span><h2>${esc(CATS[c])}</h2><span class="rc">${o.ordered?xs.length:todo.length?`${todo.length} sur ${xs.length}`:'tout est pris'}</span></div>${[...todo,...done].map(it=>renderItem(it,o)).join('')}</section>`;
+    return `<section class="rayon" aria-label="${esc(CATS[c])}"><div class="rh"><span class="tile t-${CAT_TONE[c]}">${ic(CAT_ICON[c],'s')}</span><h2>${esc(CATS[c])}</h2><span class="rc">${o.ordered?xs.length:todo.length?`${todo.length} sur ${xs.length}`:'tout est pris'}</span>${todo.length&&!o.all?`<button class="rpb" data-rprayon="${c}" aria-label="Rappel pour le rayon ${esc(CATS[c])}">${ic('bell','s')}</button>`:''}</div>${[...todo,...done].map(it=>renderItem(it,o)).join('')}</section>`;
   }).join('');
 }
 // Recherche : tous magasins, articles pris compris ; sur le nom, la quantité et les repas liés, sans tenir compte des accents
@@ -1114,7 +1125,8 @@ function renderNext(prominent){
   return h+'</section>';
 }
 function swipeRow(it, inner){
-  return `<div class="art ${state.justAdded===it.id?'new':''}"><div class="acts"><button class="a-ed" data-edit="${it.id}" aria-label="Modifier ${esc(it.label)}">${ic('edit','s')}Modifier</button><button class="a-del" data-del="${it.id}" aria-label="Supprimer ${esc(it.label)}">${ic('trash','s')}Supprimer</button></div><div class="fg">${inner}</div></div>`;
+  const rp=it.status==='a_acheter';
+  return `<div class="art ${state.justAdded===it.id?'new':''}" ${rp?'style="--n:3"':''}><div class="acts">${rp?`<button class="a-rp" data-remind="${it.id}" aria-label="Rappel pour ${esc(it.label)}">${ic('bell','s')}Rappel</button>`:''}<button class="a-ed" data-edit="${it.id}" aria-label="Modifier ${esc(it.label)}">${ic('edit','s')}Modifier</button><button class="a-del" data-del="${it.id}" aria-label="Supprimer ${esc(it.label)}">${ic('trash','s')}Supprimer</button></div><div class="fg">${inner}</div></div>`;
 }
 function mealsLine(it){
   const ls=itemMeals(it); if(!ls.length) return '';
@@ -1123,15 +1135,15 @@ function mealsLine(it){
 function plNote(it){ const x=state.placard.find(p=>fold(p.label)===fold(it.label)); return 'inventaire'+(x&&stk(x)!=='ok'?' : '+(own(STOCK,stk(x))||'').toLowerCase():'')+(it.added_by&&it.added_by!=='claude'?', noté par '+prenom(it.added_by):''); }
 function renderItem(it, o={}){
   const d=it.status==='achete' || (o.ordered && it.status==='a_acheter');
+  const rp=!d && remindOf(it);
   const sub=[o.also ?? mealsLine(it), o.all?chName(chOf(it)):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null, it.source==='placard'?plNote(it):null].filter(Boolean).join(' · ');
   const qty=o.q ?? it.qty;
-  return swipeRow(it, `<button class="tick ${d?'got':''}" data-item="${it.id}" aria-pressed="${d}"><span class="ck">${d?ic('check','xs'):''}</span><span class="al"><span class="an">${state.q?markQ(it.label):esc(it.label)}</span>${sub?`<span class="am">${esc(sub)}</span>`:''}</span>${qty?`<span class="aq">${esc(qty)}</span>`:''}</button>`);
+  return swipeRow(it, `<button class="tick ${d?'got':''}" data-item="${it.id}" aria-pressed="${d}"><span class="ck">${d?ic('check','xs'):''}</span><span class="al"><span class="an">${state.q?markQ(it.label):esc(it.label)}</span>${sub?`<span class="am">${esc(sub)}</span>`:''}${rp?`<span class="am rp">${ic('bell','xs')} ${esc(remindTxt(rp,true))}</span>`:''}</span>${qty?`<span class="aq">${esc(qty)}</span>`:''}</button>`);
 }
 // Glisser un article vers la gauche : Modifier / Supprimer. Toucher ailleurs referme.
 function bindSwipes(root=document){
-  const W=168;
   root.querySelectorAll('.art').forEach(row=>{
-    const fg=row.querySelector('.fg'); let x0=0, y0=0, dx=0, base=0, drag=false, pid=null;
+    const fg=row.querySelector('.fg'), W=84*row.querySelectorAll('.acts button').length; let x0=0, y0=0, dx=0, base=0, drag=false, pid=null;
     fg.addEventListener('pointerdown',e=>{ if(e.pointerType==='mouse' && e.button!==0) return; pid=e.pointerId; x0=e.clientX; y0=e.clientY; dx=0; drag=false; base=row.classList.contains('open')?-W:0; });
     fg.addEventListener('pointermove',e=>{
       if(e.pointerId!==pid) return;
@@ -1340,7 +1352,7 @@ function renderReglages(){
     <p class="small" style="margin:4px 0 0">${driveBase()?`Magasin : <b style="color:var(--text)">${esc(driveStore())}</b>. Collez une autre adresse pour changer.`:'Collez l\'adresse d\'une page de votre drive (elle contient « leclercdrive.fr/magasin-… ») pour les liens de recherche du mode Drive.'}</p>
     <div class="row" style="margin-top:8px"><input id="drurl" class="grow" type="url" inputmode="url" placeholder="https://fd…-courses.leclercdrive.fr/magasin-…" autocomplete="off"><button class="addbtn" id="drsave" aria-label="Enregistrer l'adresse du drive">${ic('check')}</button></div>
     <h2 class="cat" style="margin-top:28px">Notifications</h2>
-    <p class="small" style="margin:4px 0 10px">Un rappel le mercredi à 20 h 30 pour préparer la semaine suivante (s'il reste à faire), et un message quand quelqu'un d'autre échange deux repas.</p>
+    <p class="small" style="margin:4px 0 10px">Un rappel le mercredi à 20 h 30 pour préparer la semaine suivante (s'il reste à faire), un message quand quelqu'un d'autre échange deux repas, et les rappels d'achat de la liste de courses.</p>
     ${{
       on:`<p class="small">${ic('check','xs')} Activées sur ce téléphone.</p><button class="outline btn" id="pushoff" style="width:100%">Désactiver sur ce téléphone</button>`,
       off:`<button class="primary btn" id="pushon" style="width:100%">Activer sur ce téléphone</button>`,
@@ -1725,6 +1737,64 @@ function openEditSheet(id){
   };
 }
 
+// Rappels d'achat (shopping_items.remind_at / remind_to) : « j'irai chercher le poulet rôti samedi à 10 h ».
+// L'Edge Function notify prévient chaque destinataire à l'heure dite, avec ce qui reste à prendre.
+function remindOf(it){
+  if(!it.remind_at || it.remind_sent_at) return null;
+  const at=new Date(it.remind_at), to=(Array.isArray(it.remind_to)?it.remind_to:[]).filter(e=>typeof e==='string');
+  return isFinite(at) && to.length ? {at, to} : null;
+}
+const hhmm=d=>d.getHours()+' h'+(d.getMinutes()?' '+String(d.getMinutes()).padStart(2,'0'):'');
+function dayWord(iso){ const t=todayIso(); return iso===t?'aujourd\'hui':iso===addDays(t,1)?'demain':DAYS[(new Date(iso+'T00:00:00').getDay()+6)%7].toLowerCase()+' '+fmtDate(iso); }
+function remindTxt(r, court){ const d=toIso(r.at), t=todayIso();
+  const j=!court||d===t||d===addDays(t,1) ? dayWord(d) : DAYS[(r.at.getDay()+6)%7].slice(0,3).toLowerCase()+'. '+r.at.getDate();
+  return j+' à '+hhmm(r.at)+' · '+listeEt(r.to.map(prenom)); }
+function openRemindSheet(ids){
+  const pool=[...state.items,...state.backlog].filter(i=>i.status==='a_acheter');
+  const first=pool.find(i=>ids.includes(i.id)); if(!first) return;
+  const ch=chOf(first), sel=new Set(ids.filter(id=>pool.some(i=>i.id===id)));
+  const cands=pool.filter(i=>chOf(i)===ch && (i.week_id??null)===(first.week_id??null)).sort((a,b)=>a.label.localeCompare(b.label,'fr'));
+  const old=remindOf(first), me=String(state.session?.user?.email||'').toLowerCase();
+  const t=todayIso(), days=[...Array(8)].map((_,k)=>addDays(t,k));
+  let day=old?toIso(old.at):t, to=new Set(old?old.to.map(e=>e.toLowerCase()):[me]);
+  if(!days.includes(day)) days.push(day);
+  const time=old?String(old.at.getHours()).padStart(2,'0')+':'+String(old.at.getMinutes()).padStart(2,'0'):'18:00';
+  const dayChip=d=>d===t?'Aujourd\'hui':d===addDays(t,1)?'Demain':DAYS[(new Date(d+'T00:00:00').getDay()+6)%7].slice(0,3)+'. '+new Date(d+'T00:00:00').getDate();
+  openSheet(`<div class="grab"></div><div class="sheet-h"><h2>Rappel d'achat</h2>${closeBtn}</div>
+    <p class="noted" style="margin-top:0">Une notification le jour venu, avec ce qui reste à prendre ${ch==='drive'?'au Drive':'chez '+esc(chName(ch))}.</p>
+    <div class="l" id="rpal">Quoi</div>
+    <div class="rpl" role="group" aria-labelledby="rpal">${cands.map(i=>`<button data-rpi="${i.id}" aria-pressed="${sel.has(i.id)}"><span class="ck">${sel.has(i.id)?ic('check','xs'):''}</span><span>${esc(i.label)}</span>${i.qty?`<span class="aq">${esc(i.qty)}</span>`:''}</button>`).join('')}</div>
+    <div class="l" id="rpdl">Quel jour</div>
+    <div class="chips" role="radiogroup" aria-labelledby="rpdl" style="margin-top:0">${days.map(d=>`<button role="radio" data-rpd="${d}" aria-checked="${d===day}" class="${d===day?'on':''}">${esc(dayChip(d))}</button>`).join('')}</div>
+    <label class="l" for="rpt">À quelle heure</label><input id="rpt" type="time" step="300" value="${time}" style="max-width:160px">
+    <div class="l" id="rpwl">Pour qui</div>
+    <div class="chips" role="group" aria-labelledby="rpwl" style="margin-top:0">${state.members.map(m=>{ const e=m.email.toLowerCase(); return `<button data-rpw="${esc(e)}" aria-pressed="${to.has(e)}" class="${to.has(e)?'on':''}">${to.has(e)?ic('check','xs'):''}${esc(prenom(e))}</button>`; }).join('')}</div>
+    <p class="noted" id="rpmsg"></p>
+    <div class="foot" style="margin-top:16px"><button id="rpok" class="primary btn big">${ic('bell','s')} Programmer le rappel</button>
+      ${cands.some(i=>sel.has(i.id) && remindOf(i))?`<button id="rpoff" class="btn" style="background:none;color:var(--danger)">Retirer le rappel</button>`:''}</div>`);
+  const sheet=$('#sheet'), msg=sheet.querySelector('#rpmsg');
+  const when=()=>{ const v=sheet.querySelector('#rpt').value; if(!/^\d{2}:\d{2}$/.test(v)) return null; const d=new Date(day+'T'+v+':00'); return isFinite(d)?d:null; };
+  const hint=()=>{ msg.innerHTML = to.has(me) && state.push!=='on' ? 'Les notifications ne sont pas activées sur ce téléphone : à faire dans Réglages pour recevoir le rappel.' : ''; };
+  sheet.querySelectorAll('[data-rpi]').forEach(b=>b.onclick=()=>{ const id=b.dataset.rpi, on=!sel.has(id); on?sel.add(id):sel.delete(id); b.setAttribute('aria-pressed',on); b.querySelector('.ck').innerHTML=on?ic('check','xs'):''; });
+  sheet.querySelectorAll('[data-rpd]').forEach(b=>b.onclick=()=>{ day=b.dataset.rpd; sheet.querySelectorAll('[data-rpd]').forEach(x=>{ x.setAttribute('aria-checked',x===b); x.classList.toggle('on',x===b); }); });
+  sheet.querySelectorAll('[data-rpw]').forEach(b=>b.onclick=()=>{ const e=b.dataset.rpw, on=!to.has(e); on?to.add(e):to.delete(e); b.setAttribute('aria-pressed',on); b.classList.toggle('on',on); b.innerHTML=(on?ic('check','xs'):'')+esc(prenom(e)); hint(); });
+  hint();
+  const save=async(patch, ok)=>{
+    const {error}=await sb.from('shopping_items').update(patch).in('id',[...sel]);
+    if(error){ toast('Erreur : '+error.message); return; }
+    closeSheet(); toast(ok); await loadWeekData();
+  };
+  sheet.querySelector('#rpok').onclick=()=>{
+    const at=when();
+    if(!sel.size){ msg.textContent='Choisis au moins un article.'; return; }
+    if(!at){ msg.textContent='Choisis une heure.'; return; }
+    if(at<=new Date()){ msg.textContent='Cette heure est déjà passée.'; return; }
+    if(!to.size){ msg.textContent='Choisis pour qui.'; return; }
+    save({remind_at:at.toISOString(), remind_to:[...to]}, 'Rappel '+remindTxt({at, to:[...to]}));
+  };
+  const off=sheet.querySelector('#rpoff'); if(off) off.onclick=()=>save({remind_at:null, remind_to:[]}, 'Rappel retiré');
+}
+
 // Échanger un repas avec n'importe quel autre repas de la même semaine, passés compris (correction après coup)
 function swapWarnings(a, b){
   // a va sur le créneau de b, et b sur celui de a ; pas d'avertissement pour corriger ce qui a déjà été mangé
@@ -2017,6 +2087,9 @@ function bindMain(){
   const fb=$('#findbtn'); if(fb) fb.onclick=()=>{ const on=!(state.findOpen||state.q); state.findOpen=on; state.q=''; render(); if(on) $('#find')?.focus(); };
   bindSwipes();
   document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEditSheet(b.dataset.edit));
+  document.querySelectorAll('[data-remind]').forEach(b=>b.onclick=()=>openRemindSheet([b.dataset.remind]));
+  document.querySelectorAll('[data-rprayon]').forEach(b=>b.onclick=()=>{ const c=b.dataset.rprayon, ch=curChannel();
+    openRemindSheet(state.items.filter(i=>i.status==='a_acheter' && chOf(i)===ch && (has(CATS,i.category)?i.category:'autre')===c).map(i=>i.id)); });
   document.querySelectorAll('[data-item]').forEach(el=>el.onclick=async()=>{
     const it=state.items.find(i=>i.id===el.dataset.item); if(!it) return;
     const done=it.status!=='achete';
@@ -2571,6 +2644,7 @@ async function onSession(session){
   await Promise.all([loadStatic(), loadWeeks(), loadProposal()]);
   await loadWeekData(); subscribe(); checkPush().then(()=>{ if(state.tab==='reglages') render(); }).catch(()=>{});
   if(location.hash==='#preparer'){ history.replaceState(null,'',location.pathname); openWizard(state.draft); }
+  else if(location.hash==='#courses'){ history.replaceState(null,'',location.pathname); setTab('courses'); }
   else if(location.hash==='#menu'){ history.replaceState(null,'',location.pathname); if(state.proposal) openReview(); else toast('Pas de menu proposé pour l\'instant'); }
 }
 boot();
