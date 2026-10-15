@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-0FNq7fA1lPkxGJuVp6Wp0X8DONVl7o/HvFpAMSjAkyc='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-YUjhinb3YduV4M0IsOow/o1X1Vxu94yKBkoLFy2rE5s='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -545,7 +545,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.15-0734';
+const APP_VERSION = '2026.10.15-0746';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -711,8 +711,9 @@ function cleanReview(r){
   const jours={};
   if(isObj(r.jours)) for(const k of DK){ const j=r.jours[k]; if(!isObj(j)) continue;
     jours[k]={...j, ok:typeof j.ok==='boolean'?j.ok:undefined, remarque:txt(j.remarque), reprise:int(j.reprise,1,1000)??undefined, par:txt(j.par,200)||undefined, le:txt(j.le,40)||undefined}; }
+  const a=isObj(r.attente) ? {par:txt(r.attente.par,200).toLowerCase(), le:txt(r.attente.le,40), pour:strList(r.attente.pour,200,10).map(e=>e.toLowerCase())} : null;
   return {...r, jours, global:isObj(r.global)?{...r.global, remarque:txt(r.global.remarque)}:undefined, reprise:r.reprise===true||undefined,
-    envoye_par:txt(r.envoye_par,200)||undefined, envoye_le:txt(r.envoye_le,40)||undefined};
+    envoye_par:txt(r.envoye_par,200)||undefined, envoye_le:txt(r.envoye_le,40)||undefined, attente:a?.par && a.pour.length ? a : undefined};
 }
 function cleanProposal(p){
   if(!p) return p;
@@ -2424,6 +2425,12 @@ function guessBase(t){ t=t.toLowerCase(); return /pâte|pate|spaghetti|lasagne|g
 const protOf=m=>m.proteine_type||guessProt(m.title||''), baseOf=m=>m.base||guessBase(m.title||'');
 const cookedMeal=m=>!NO_COOK.includes(m.kind) && m.kind!=='restes';
 const revDays=p=>p.review?.jours||{};
+// Validation à deux : la première personne valide et demande l'avis des autres membres (review.attente) ; le menu reste
+// une proposition jusqu'à ce que l'un d'eux valide à son tour ou envoie ses remarques à Claude.
+const myEmail=()=>String(state.session?.user?.email||'').toLowerCase();
+const otherMembers=()=>state.members.map(m=>m.email.toLowerCase()).filter(e=>e!==myEmail());
+const attente=p=>p?.status==='proposee' ? p.review?.attente||null : null;
+const noms=(emails)=>emails.map(prenom).join(' et ');
 function propDay(k){ return addDays(state.propWeek.week_start, DK.indexOf(k)); }
 function dayMeals(p,k){ const day=propDay(k); return (p.content?.repas||[]).filter(m=>m.day===day).sort(mealSort); }
 function dayState(p,k){ if(!dayMeals(p,k).length) return 'na'; const r=revDays(p)[k]; return r?.ok===true?'ok':r?.ok===false?'ko':'todo'; }
@@ -2484,6 +2491,9 @@ function propAlerts(m, ctx, all){
 }
 function propBanner(){
   const p=state.proposal, w=state.propWeek; if(!p||!w) return '';
+  const a=attente(p);
+  if(a && a.par===myEmail()) return `<button class="banner" id="openrev">${ic('check')}<span><b>Menu du ${esc(fmtDate(w.week_start))} validé · au tour de ${esc(noms(a.pour))}</b>Il passera dans la Semaine dès que ${esc(noms(a.pour))} l'aura validé aussi. Touchez pour le revoir ou le valider sans attendre.</span></button>`;
+  if(a) return `<button class="banner" id="openrev">${ic('msg')}<span><b>${esc(prenom(a.par))} a validé le menu du ${esc(fmtDate(w.week_start))}</b>À vous de le relire, puis de le valider à votre tour ou d'envoyer vos remarques à Claude.</span></button>`;
   if(p.status==='proposee'){ const n=reviewedCount(p), c=DK.filter(k=>isReprise(p,k)).length; if(c&&n===c&&c<7) return `<button class="banner" id="openrev">${ic('msg')}<span><b>Claude propose le menu du ${esc(fmtDate(w.week_start))} · version ${p.version}</b>${c} jour${c>1?'s':''} déjà validé${c>1?'s':''} : il reste ${7-c>1?`les ${7-c} jours modifiés`:'le jour modifié'} à relire.</span></button>`; return `<button class="banner" id="openrev">${ic('msg')}<span><b>Claude propose le menu du ${esc(fmtDate(w.week_start))}${p.version>1?` · version ${p.version}`:''}</b>${n?`${n} jour${n>1?'s':''} sur 7 relu${n>1?'s':''}. Touchez pour continuer.`:'À relire jour par jour, puis valider la semaine.'}</span></button>`; }
   if(p.status==='remarques') return `<button class="banner" id="openrev">${ic('msg')}<span><b>Remarques envoyées à Claude</b>Il prépare la version ${p.version+1} du menu du ${esc(fmtDate(w.week_start))}.</span></button>`;
   return '';
@@ -2558,7 +2568,8 @@ function renderPropMeal(m,ctx,all){
 }
 function renderVerdict(r,ro){
   if(ro) return (r.ok===false||r.remarque)?`<div class="verdict"><h3>${r.ok===false?'À changer':'Votre remarque'}</h3><p style="margin:0">${esc(r.remarque||'')}</p></div>`:'';
-  const rep=int(r.reprise,1)?`<p class="prevrem" style="margin:0 0 10px">Déjà validé en version ${int(r.reprise,1)}, inchangé depuis : vous pouvez passer.</p>`:'';
+  const rep=int(r.reprise,1)?`<p class="prevrem" style="margin:0 0 10px">Déjà validé en version ${int(r.reprise,1)}, inchangé depuis : vous pouvez passer.</p>`
+    : attente(state.proposal) && r.ok===true && r.par && r.par.toLowerCase()!==myEmail() ? `<p class="prevrem" style="margin:0 0 10px">${esc(prenom(r.par))} a dit « Ça me va ». Et vous ?</p>`:'';
   return `<div class="verdict"><h3>Ce jour-là, ça vous va ?</h3>${rep}
     <div class="vbtns"><button class="ok${r.ok===true?' on':''}" data-v="ok" aria-pressed="${r.ok===true}">${ic('check','s')}Ça me va</button><button class="ko${r.ok===false?' on':''}" data-v="ko" aria-pressed="${r.ok===false}">${ic('msg','s')}À changer</button></div>
     <textarea id="rrem" aria-label="Remarque" placeholder="${r.ok===false?'Qu\'est-ce qui ne va pas, et vers quoi aller ?':'Une remarque ou une adaptation ? (facultatif)'}">${esc(r.remarque||'')}</textarea>
@@ -2567,8 +2578,9 @@ function renderVerdict(r,ro){
 }
 function renderRevWeek(p,w,ro){
   const ctx=w.context||{}, all=(p.content?.repas||[]), g=p.review?.global||{};
-  let h=ro?doneBox(p):'';
-  h+=`<h2>${ro?'Le menu de la semaine':'Toute la semaine d\'un coup d\'œil'}</h2><p class="lead">${p.content?.meteo_semaine?esc(p.content.meteo_semaine)+'. ':''}${ro?'':'Vérifiez la cohérence de l\'ensemble, puis validez ou envoyez vos remarques à Claude.'}</p>`;
+  const a=attente(p);
+  let h=ro?doneBox(p):a?waitBox(a):'';
+  h+=`<h2>${ro?'Le menu de la semaine':'Toute la semaine d\'un coup d\'œil'}</h2><p class="lead">${p.content?.meteo_semaine?esc(p.content.meteo_semaine)+'. ':''}${ro?'':a&&a.par!==myEmail()?'Touchez un jour pour le détail ou pour demander un changement.':'Vérifiez la cohérence de l\'ensemble, puis validez ou envoyez vos remarques à Claude.'}</p>`;
   h+=`<div class="card" style="padding:2px 14px">`+DK.map((k,i)=>{ const day=propDay(k), ms=dayMeals(p,k), st=dayState(p,k), r=revDays(p)[k]||{};
     return `<button class="wk" data-day="${i}" aria-label="${DAYN[k]}"><div><div class="dn">${DAYN[k].slice(0,3)}</div><div class="dd">${new Date(day+'T00:00:00').getDate()}</div></div><div>${ms.length?ms.map(m=>`<span class="t">${ms.length>1?`<span class="slotl">${esc(m.slot)}</span> `:''}${esc(m.title)}</span><span class="m">${esc(mealMeta(m))}</span>`).join(''):`<span class="m" style="padding-top:8px">Rien à prévoir</span>`}${r.remarque?`<span class="rem">« ${esc(r.remarque)} »</span>`:''}</div><span class="st ${st}">${st==='ok'?ic('check','xs'):st==='ko'?ic('msg','xs'):st==='todo'?'?':''}</span></button>`; }).join('')+`</div>`;
   const cooked=all.filter(cookedMeal);
@@ -2592,12 +2604,21 @@ function weekFoot(p){
   // une remarque, même sur un jour qui « va », repart chez Claude : c'est une adaptation à faire
   const todo=DK.filter(k=>dayState(p,k)==='todo'), kos=DK.filter(k=>dayState(p,k)==='ko'||(revDays(p)[k]?.remarque||'').trim()), hasRem=kos.length||(p.review?.global?.remarque||'').trim();
   let h=todo.length?`<p class="hint center" style="margin:0 0 4px">Encore ${todo.length} jour${todo.length>1?'s':''} à relire : ${todo.map(k=>DAYN[k].toLowerCase()).join(', ')}.</p>`:'';
-  h+= hasRem ? `<button id="rsend" class="primary btn big" ${todo.length||state.busy?'disabled':''}>${ic('send','s')}Envoyer à Claude${kos.length?` · ${kos.length} remarque${kos.length>1?'s':''}`:''}</button>`
-             : `<button id="rvalid" class="primary btn big" ${todo.length||state.busy?'disabled':''}>${ic('check','s')}Valider le menu de la semaine</button>`;
+  const off=todo.length||state.busy?'disabled':'', a=attente(p), autres=otherMembers();
+  if(hasRem) return h+`<button id="rsend" class="primary btn big" ${off}>${ic('send','s')}Envoyer à Claude${kos.length?` · ${kos.length} remarque${kos.length>1?'s':''}`:''}</button>`;
+  if(a && a.par===myEmail()) return h+`<button id="rvalid" class="outline btn big" ${off}>${ic('check','s')}Valider sans attendre ${esc(noms(a.pour))}</button>`;
+  if(a) return h+`<button id="rvalid" class="primary btn big" ${off}>${ic('check','s')}Valider à mon tour</button>`;
+  h+=`<button id="rvalid" class="primary btn big" ${off}>${ic('check','s')}Valider le menu de la semaine</button>`;
+  if(autres.length) h+=`<button id="rask" class="outline btn big" ${off}>${ic('send','s')}Valider et faire valider par ${esc(noms(autres))}</button>`;
   return h;
 }
+function waitBox(a){
+  if(a.par===myEmail()) return `<div class="done">${ic('check')}<span><b>Vous l'avez validé · au tour de ${esc(noms(a.pour))}</b>Le menu passera dans la Semaine dès que ${esc(noms(a.pour))} l'aura validé aussi, ou si vous le validez sans attendre.</span></div>`;
+  return `<div class="done">${ic('check')}<span><b>Validé par ${esc(prenom(a.par))}</b>Si ça vous va aussi, validez à votre tour : le menu passe dans la Semaine. Sinon, dites quel jour changer.</span></div>`;
+}
 function doneBox(p){
-  const par=p.review?.envoye_par?` par ${esc(prenom(p.review.envoye_par))}`:'';
+  const a=p.review?.attente, e=p.review?.envoye_par;
+  const par=e?` par ${a&&a.par!==e.toLowerCase()&&p.status==='validee'?esc(prenom(a.par))+' et ':''}${esc(prenom(e))}`:'';
   if(p.status==='remarques') return `<div class="done">${ic('send')}<span><b>Remarques envoyées à Claude${par}</b>Sur le Mac, dites-lui « c'est envoyé » : il revient avec une version ${p.version+1}.</span></div>`;
   if(p.status==='validee') return `<div class="done">${ic('check')}<span><b>Menu validé${par}</b>Il est dans l'onglet Semaine et reste modifiable. Claude prépare les ingrédients ; quand le menu est bon, figez-le pour faire le tour du placard.</span></div>`;
   return '';
@@ -2625,7 +2646,20 @@ function bindReview(){
   const g=$('#rglob'); if(g) g.oninput=()=>{ setReview(r=>{ r.global={remarque:g.value.trim()}; }); const f=$('#rfoot'); if(f){ f.innerHTML=weekFoot(p); bindWeekFoot(); } };
   bindWeekFoot();
 }
-function bindWeekFoot(){ const s=$('#rsend'); if(s) s.onclick=sendReview; const v=$('#rvalid'); if(v) v.onclick=validateMenu; }
+function bindWeekFoot(){ const s=$('#rsend'); if(s) s.onclick=sendReview; const v=$('#rvalid'); if(v) v.onclick=validateMenu; const q=$('#rask'); if(q) q.onclick=askValidation; }
+// La personne qui a validé en premier est prévenue de la réponse ; les autres, de la demande (Edge Function notify).
+const notifyValidation=(p)=>sb.functions.invoke('notify',{body:{kind:'validation', id:p.id}}).catch(()=>{});
+async function askValidation(){
+  const p=state.proposal, w=state.propWeek, pour=otherMembers(); clearTimeout(revSaveT); revSaveT=null;
+  if(!pour.length || !confirm(`Valider le menu de la semaine du ${fmtDate(w.week_start)} et l'envoyer à ${noms(pour)} ? Il passera dans la Semaine quand ${noms(pour)} l'aura validé aussi.`)) return;
+  state.busy=true; render();
+  p.review=Object.assign({}, p.review, {attente:{par:myEmail(), le:new Date().toISOString(), pour}});
+  const {error}=await sb.from('menu_proposals').update({review:p.review}).eq('id',p.id).eq('status','proposee');
+  state.busy=false;
+  if(error){ toast('Erreur : '+error.message); render(); return; }
+  notifyValidation(p);
+  state.rev=null; render(); window.scrollTo(0,0); toast(`Envoyé à ${noms(pour)}`);
+}
 async function sendReview(){
   const p=state.proposal; clearTimeout(revSaveT); revSaveT=null;
   p.review=Object.assign({}, p.review, {envoye_par:state.session.user.email, envoye_le:new Date().toISOString()});
@@ -2633,23 +2667,26 @@ async function sendReview(){
   const {error}=await sb.from('menu_proposals').update({review:p.review, status:'remarques', decided_at:new Date().toISOString()}).eq('id',p.id);
   state.busy=false;
   if(error){ toast('Erreur : '+error.message); render(); return; }
+  if(p.review.attente && p.review.attente.par!==myEmail()) notifyValidation(p);
   p.status='remarques'; state.rev.step=7; render(); window.scrollTo(0,0); toast('Envoyé à Claude');
 }
 // Valider : la semaine passe en « valide » et les repas remplacent ceux de la semaine ; Claude complète ensuite (plats, courses).
 async function validateMenu(){
   const p=state.proposal, w=state.propWeek; clearTimeout(revSaveT); revSaveT=null;
-  if(!confirm(`Valider le menu de la semaine du ${fmtDate(w.week_start)} ? Il remplace ce qui est prévu cette semaine-là dans l'app.`)) return;
+  const a=attente(p), second=a && a.par!==myEmail();
+  if(!confirm(a&&!second ? `Valider le menu sans attendre ${noms(a.pour)} ? Il remplace ce qui est prévu cette semaine-là dans l'app.`
+    : `Valider le menu de la semaine du ${fmtDate(w.week_start)}${second?` (déjà validé par ${prenom(a.par)})`:''} ? Il remplace ce qui est prévu cette semaine-là dans l'app.`)) return;
   state.busy=true; render();
   p.review=Object.assign({}, p.review, {envoye_par:state.session.user.email, envoye_le:new Date().toISOString()});
   const rows=(p.content?.repas||[]).map(m=>({week_id:w.id, day:m.day, slot:m.slot, title:m.title, kind:keyOf(m.kind,KIND,'assemblage'), url:safeUrl(m.url), prep_minutes:int(m.prep_minutes,1,1440), notes:m.notes||null}));
-  const ctx=Object.assign({}, w.context||{}, p.content?.meteo_semaine?{meteo:p.content.meteo_semaine}:{}, {menu_valide_par:state.session.user.email, menu_valide_le:new Date().toISOString(), proposition_version:p.version});
+  const ctx=Object.assign({}, w.context||{}, p.content?.meteo_semaine?{meteo:p.content.meteo_semaine}:{}, {menu_valide_par:state.session.user.email, menu_valide_le:new Date().toISOString(), proposition_version:p.version}, second?{menu_valide_aussi_par:a.par}:{});
   let r=await sb.from('weeks').update({status:'valide', context:ctx}).eq('id',w.id);
   if(!r.error) r=await sb.from('meals').delete().eq('week_id',w.id);
   if(!r.error && rows.length) r=await sb.from('meals').insert(rows);
   if(!r.error) r=await sb.from('menu_proposals').update({review:p.review, status:'validee', decided_at:new Date().toISOString()}).eq('id',p.id);
   state.busy=false;
   if(r.error){ toast('Erreur : '+r.error.message); render(); return; }
-  p.status='validee'; state.rev=null;
+  p.status='validee'; state.rev=null; if(second) notifyValidation(p);
   await loadWeeks(); const i=state.weeks.findIndex(x=>x.id===w.id); if(i>=0) state.weekIdx=i;
   await loadWeekData(); setTab('semaine'); toast('Menu validé : il est dans la Semaine');
 }
