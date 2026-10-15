@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-KSRm/0hMvbS+hBPLTslxzHfOZ/+7PvvwZ8ZTS4GpiGk='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-0//xqduNv4oFg2IeEIT+NF0FMUzypNMJFBphW5FrFmA='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -357,6 +357,15 @@ button.sm{min-height:40px;padding:0 12px;font-size:14px;border-radius:10px;flex:
 .stk button[aria-pressed="true"][data-s="ok"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-soft-text);font-weight:600}
 .stk button[aria-pressed="true"][data-s="bas"]{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--bg));color:var(--warn);font-weight:600}
 .stk button[aria-pressed="true"][data-s="fini"]{border-color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,var(--bg));color:var(--danger);font-weight:600}
+/* Tour du placard : les ingrédients du menu figé, par rangement, J'ai / Pas assez / J'ai pas */
+.vr{padding:12px 0;border-bottom:1px solid var(--line)}
+.vr .vh{display:flex;gap:10px;align-items:baseline}
+.vr .an{font-weight:500}
+.vr .am{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.vr .aq{color:var(--muted);font-size:14px;flex:none}
+.vr .stk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:8px}
+.vr .stk button{min-width:0}
+.vr.lock{opacity:.6}
 .strow{width:100%;display:flex;align-items:center;gap:12px;padding:8px 0;min-height:56px;background:none;border-radius:0;border-bottom:1px solid var(--line);text-align:left;font-weight:500}
 .strow[aria-checked="true"] .ck{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .strow .sto{font-size:13px;color:var(--muted);flex:none}
@@ -530,7 +539,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.14-2215';
+const APP_VERSION = '2026.10.15-0606';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -634,7 +643,8 @@ const state = {
   showNext:false, showOrder:false, justAdded:null, invQ:'',
   email: localStorage_get('email') || '', err:'', busy:false,
   draft:null, wiz:null, drive:false, settings:{}, driveDone:false,
-  proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[]
+  proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[],
+  verif:[], verifMeals:[], verifOpen:false
 };
 function localStorage_get(k){ try{ return localStorage.getItem('ar_'+k); }catch{ return null; } }
 function localStorage_set(k,v){ try{ localStorage.setItem('ar_'+k, v); }catch{} }
@@ -719,6 +729,7 @@ function cleanContext(c){
   for(const x of ['meteo','envies','restes','besoins_maison','invites']) if(has(c,x)) out[x]=txt(c[x]);
   if(has(c,'fruits_legumes')) out.fruits_legumes=oneOf(c.fruits_legumes,['magasin','drive','mixte'],'magasin');
   if(has(c,'placard_manque')) out.placard_manque=strList(c.placard_manque,120,200);
+  for(const x of ['menu_fige_le','menu_fige_par']) if(has(c,x)) out[x]=txt(c[x],200);
   return out;
 }
 const cleanWeek = (w)=>w ? {...w, context:cleanContext(w.context)} : w;
@@ -841,6 +852,7 @@ function render(){
   else if(state.member===null){ app.innerHTML='<div class="empty">Chargement…</div>'; }
   else if(state.rev){ app.innerHTML=renderReview(); bindReview(); }
   else if(state.wiz){ app.innerHTML=renderWizard(); bindWizard(); }
+  else if(state.verifOpen){ app.innerHTML=renderVerif(); bindVerif(); }
   else if(state.drive){ app.innerHTML=renderDrive(); bindDrive(); }
   else {
     const t=state.tab;
@@ -897,6 +909,7 @@ function nextMondayAfterToday(){ return addDays(todayIso(), 7-dayIdx(todayIso())
 function needPrep(){ return dayIdx(todayIso())>=3 && !state.weeks.some(w=>w.week_start===nextMondayAfterToday()); }
 function prepBanner(force){
   const pb=propBanner(); if(pb) return pb;   // une proposition de Claude attend : elle passe devant
+  const fb=freezeBanner(); if(fb) return fb;   // puis le menu à figer, ou le tour du placard en cours
   if(state.draft) return `<button class="banner" id="draftbanner">${ic('note')}<span><b>Semaine du ${fmtDate(state.draft.week_start)} préparée</b>En attente du menu de Claude. Touchez pour modifier.</span></button>`;
   if(force || needPrep()) return `<button class="banner" id="prep">${ic('note')}<span><b>Préparer la semaine qui vient</b>2 minutes de questions, puis Claude fait le menu.</span></button>`;
   return '';
@@ -965,7 +978,8 @@ function renderSemaine(){
   let h=`<header class="top"><h1>Semaine</h1>${w?weekNav():''}</header>`;
   if(!w) return h+`<main><div class="empty"><b>Aucune semaine au menu.</b></div>${prepBanner(true)}</main>`;
   const ctx=w.context||{};
-  h+=`<div class="subh"><b>${esc(rangeLabel(w))}</b>${own(STATUS,w.status)?`<span>· ${esc(own(STATUS,w.status))}</span>`:''}${ctx.meteo?`<span class="row" style="gap:6px">${ic('cloud','s')}<span>${esc(ctx.meteo)}</span></span>`:''}</div>
+  const st=w.id===verifWeek()?.id && state.verif.length ? (isFrozen(w)?'Menu figé':'Menu en brouillon') : own(STATUS,w.status);
+  h+=`<div class="subh"><b>${esc(rangeLabel(w))}</b>${st?`<span>· ${esc(st)}</span>`:''}${ctx.meteo?`<span class="row" style="gap:6px">${ic('cloud','s')}<span>${esc(ctx.meteo)}</span></span>`:''}</div>
     <div class="subh" style="padding-bottom:10px"><span>Touchez un repas pour l'échanger avec un autre.</span></div><main>`;
   const t=todayIso();
   for(let i=0;i<7;i++){
@@ -1026,6 +1040,7 @@ function renderCourses(){
     const st=c==='drive' && driveOrdered(w) && !left ? 'commande passée' : left?left+' à prendre':xs.length?'tout est pris':'rien à prendre';
     return `<button data-filter="${c}" aria-pressed="${c===ch}">${ic(chIcon(c))}<b>${esc(chName(c))}</b><span>${st}</span></button>`; }).join('')}</div>`;
   h+=stowBanner();
+  if(ch==='drive') h+=freezeBanner();
   // commande drive passée : la prochaine liste d'abord, puis la commande repliée
   const ordered = ch==='drive' && driveOrdered(w), prominent = ch==='drive' && (ordered || !targetWeek('drive'));
   if(prominent) h+=renderNext(true);
@@ -1136,7 +1151,7 @@ function plNote(it){ const x=state.placard.find(p=>fold(p.label)===fold(it.label
 function renderItem(it, o={}){
   const d=it.status==='achete' || (o.ordered && it.status==='a_acheter');
   const rp=!d && remindOf(it);
-  const sub=[o.also ?? mealsLine(it), o.all?chName(chOf(it)):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null, it.source==='placard'?plNote(it):null].filter(Boolean).join(' · ');
+  const sub=[o.also ?? mealsLine(it), o.all?chName(chOf(it)):null, it.source==='manque'&&it.added_by?'ajouté par '+prenom(it.added_by):null, it.source==='placard'?plNote(it):null, it.verif==='bas'?'il en reste un peu':null].filter(Boolean).join(' · ');
   const qty=o.q ?? it.qty;
   return swipeRow(it, `<button class="tick ${d?'got':''}" data-item="${it.id}" aria-pressed="${d}"><span class="ck">${d?ic('check','xs'):''}</span><span class="al"><span class="an">${state.q?markQ(it.label):esc(it.label)}</span>${sub?`<span class="am">${esc(sub)}</span>`:''}${rp?`<span class="am rp">${ic('bell','xs')} ${esc(remindTxt(rp,true))}</span>`:''}</span>${qty?`<span class="aq">${esc(qty)}</span>`:''}</button>`);
 }
@@ -1435,6 +1450,86 @@ function stockSeg(x, opts=['ok','bas','fini']){
 function stowBanner(){
   const n=toStow().length; if(!n) return '';
   return `<button class="banner" id="stowgo" style="margin-top:8px">${ic('check')}<span><b>Courses rangées ?</b>${n===1?'1 article du placard acheté':n+' articles du placard achetés'} : mettez l'inventaire à jour.</span></button>`;
+}
+
+// ---------- Menu figé et tour du placard ----------
+// Dès la validation du menu, Claude écrit ses ingrédients en 'a_verifier', avec l'endroit où ils se rangent (migration
+// 0019). Ils restent hors de la liste : le menu est un brouillon qu'on peut encore changer. Une fois figé
+// (weeks.context.menu_fige_le), le tour du placard les passe un par un : J'ai → en_stock (verif ok), Pas assez →
+// a_acheter (verif bas), J'ai pas → a_acheter (verif manque). La liste qui en sort est triée par rayon, comme toujours.
+const RANGEMENTS = { frigo:'Frigo', congelateur:'Congélateur', fruits_legumes:'Fruits et légumes', placard:'Placard', epices:'Épices et condiments', autre:'Ailleurs' };
+const VERIF = { ok:"J'ai", bas:'Pas assez', manque:"J'ai pas" };
+const isVerif = (i)=>i.status==='a_verifier' || i.status==='en_stock';
+// La semaine du tour : celle de la prochaine commande drive, une fois son menu validé
+function verifWeek(){ const w=targetWeek('drive'); return w && w.status==='valide' ? w : null; }
+const isFrozen = (w)=>!!w?.context?.menu_fige_le;
+const verifTodo = ()=>state.verif.filter(i=>i.status==='a_verifier');
+const verifOf = (i)=>i.status==='a_verifier' ? null : i.status==='en_stock' ? 'ok' : keyOf(i.verif,VERIF,'manque');
+function freezeBanner(){
+  const w=verifWeek(); if(!w || !state.verif.length) return '';
+  if(!isFrozen(w)) return `<button class="banner" id="freezego">${ic('note')}<span><b>Menu du ${esc(fmtDate(w.week_start))} en brouillon</b>Échangez des repas ou demandez des changements à Claude. Quand il est bon, touchez ici pour le figer : on passe au tour du placard.</span></button>`;
+  const n=verifTodo().length; if(!n) return '';
+  return `<button class="banner" id="verifgo">${ic('jar')}<span><b>Tour du placard · ${n===1?'1 ingrédient':n+' ingrédients'} à vérifier</b>Le menu est figé. Dites ce que vous avez déjà : le reste va sur la liste de courses.</span></button>`;
+}
+async function freezeMenu(){
+  const w=verifWeek(); if(!w) return;
+  if(!confirm(`Figer le menu de la semaine du ${fmtDate(w.week_start)} ? On passe au tour du placard. Vous pourrez toujours échanger deux repas.`)) return;
+  const ctx=Object.assign({}, w.context||{}, {menu_fige_le:new Date().toISOString(), menu_fige_par:state.session.user.email});
+  const {error}=await sb.from('weeks').update({context:ctx}).eq('id',w.id);
+  if(error){ toast('Erreur : '+error.message); return; }
+  w.context=ctx; state.verifOpen=true; render(); window.scrollTo(0,0);
+}
+function verifMeals(it){ return (it.for_meals||[]).map(l=>state.verifMeals.find(m=>m.id===l.meal_id)).filter(Boolean).sort(mealSort); }
+function verifRow(it){
+  const v=verifOf(it), lock=!isVerif(it) && (it.status!=='a_acheter' || !!it.drive_cart), uses=verifMeals(it);
+  return `<div class="vr ${lock?'lock':''}"><div class="vh"><span class="grow"><span class="an">${esc(it.label)}</span>${uses.length?`<span class="am">Pour ${esc(uses.map(m=>whenShort(m).toLowerCase()+' ('+shortTitle(m.title)+')').join(', '))}</span>`:''}</span>${it.qty?`<span class="aq">${esc(it.qty)}</span>`:''}</div>
+    ${lock?`<span class="am">${it.status==='achete'?'Déjà pris':'Déjà au panier'}</span>`
+      :`<div class="stk" role="group" aria-label="${esc(it.label)}">${Object.keys(VERIF).map(k=>`<button data-vf="${it.id}" data-v="${k}" data-s="${k==='manque'?'fini':k}" aria-pressed="${v===k}">${esc(VERIF[k])}</button>`).join('')}</div>`}</div>`;
+}
+function renderVerif(){
+  const w=verifWeek(), xs=state.verif;
+  let h=`<header class="top"><div class="row"><button class="iconbtn" id="vback" aria-label="Retour">${ic('left','s')}</button><h1>Tour du placard</h1></div></header>`;
+  if(w) h+=`<div class="subh"><span>Menu de la semaine du ${esc(rangeLabel(w))}</span></div>`;
+  h+='<main>';
+  if(!w || !xs.length) return h+`<div class="empty">Rien à vérifier pour l'instant.</div></main>`;
+  const n=xs.length, left=verifTodo().length, buy=xs.filter(i=>!isVerif(i)).length;
+  h+=`<div class="sub"><b style="color:var(--text)">${n-left}</b> sur ${n} vérifiés${buy?` · ${buy} à acheter`:''}</div><div class="prog"><i style="width:${Math.round((n-left)/n*100)}%"></i></div>`;
+  h+=`<p class="noted">Faites le tour dans l'ordre : pour chaque ingrédient du menu, dites si vous l'avez. Ce qui manque va sur la liste de courses.</p>`;
+  const groups={}; for(const it of xs) (groups[keyOf(it.rangement,RANGEMENTS,'autre')] ||= []).push(it);
+  for(const g of Object.keys(RANGEMENTS)){
+    const gs=groups[g]; if(!gs) continue;
+    gs.sort((a,b)=>a.label.localeCompare(b.label,'fr'));
+    h+=`<h2 class="cat">${esc(RANGEMENTS[g])}${gs.some(i=>i.status==='a_verifier')?'':' · fait'}</h2>`+gs.map(verifRow).join('');
+  }
+  h+=`<div class="dfoot"><button class="btn big ${left?'outline':'primary'}" id="vdone" style="width:100%">${left?'Voir la liste de courses':'C\'est vérifié : voir la liste'}</button></div>`;
+  return h+'</main>';
+}
+// Toucher la réponse déjà choisie la retire (l'ingrédient redevient à vérifier)
+async function setVerif(it, k){
+  const prev={status:it.status, verif:it.verif??null};
+  const next=verifOf(it)===k ? {status:'a_verifier', verif:null} : k==='ok' ? {status:'en_stock', verif:'ok'} : {status:'a_acheter', verif:k};
+  Object.assign(it,next); render();
+  const {error}=await sb.from('shopping_items').update(next).eq('id',it.id);
+  if(error){ Object.assign(it,prev); render(); toast('Erreur : '+error.message); return; }
+  await syncPlacard(it, next.verif);
+  if(prev.status==='a_verifier' && !verifTodo().length) toast('Tour du placard terminé : la liste est prête');
+  await loadWeekData();
+}
+// Un fond de placard passé au tour met l'inventaire à jour, sans rien ajouter : l'ingrédient est déjà sur la liste
+async function syncPlacard(it, v){
+  const x=state.placard.find(p=>fold(p.label)===fold(it.label)); if(!x || !v) return;
+  const s=v==='manque'?'fini':v, now=new Date().toISOString(), by=state.session.user.email;
+  Object.assign(x,{stock:s, stock_at:now, stock_by:by});
+  const {error}=await sb.from('household_items').update({stock:s, stock_at:now, stock_by:by}).eq('id',x.id);
+  if(error) toast('Inventaire pas mis à jour : '+error.message);
+}
+function bindVerif(){
+  $('#vback').onclick=()=>{ state.verifOpen=false; render(); window.scrollTo(0,0); };
+  document.querySelectorAll('[data-vf]').forEach(b=>b.onclick=()=>{ const it=state.verif.find(i=>i.id===b.dataset.vf); if(it) setVerif(it, b.dataset.v); });
+  const d=$('#vdone'); if(d) d.onclick=async()=>{
+    const w=verifWeek(), i=w?state.weeks.findIndex(x=>x.id===w.id):-1; if(i>=0) state.weekIdx=i;
+    state.verifOpen=false; state.filter='drive'; localStorage_set('filter','drive'); await loadWeekData(); setTab('courses');
+  };
 }
 function renderInventaire(){
   const P=state.placard, tb=P.filter(x=>stk(x)!=='ok').sort((a,b)=>(stk(a)==='fini'?0:1)-(stk(b)==='fini'?0:1) || a.label.localeCompare(b.label));
@@ -2081,6 +2176,8 @@ function bindMain(){
   document.querySelectorAll('[data-swap]').forEach(b=>b.onclick=()=>openSwap(b.dataset.swap));
   document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>rateMeal(b.dataset.id, b.dataset.rate));
   const dg=$('#drivego'); if(dg) dg.onclick=()=>{ state.drive=true; render(); window.scrollTo(0,0); };
+  const fz=$('#freezego'); if(fz) fz.onclick=freezeMenu;
+  const vg=$('#verifgo'); if(vg) vg.onclick=()=>{ state.verifOpen=true; render(); window.scrollTo(0,0); };
   const nt=$('#nexttoggle'); if(nt) nt.onclick=()=>{ state.showNext=!state.showNext; render(); };
   const ot=$('#ordertoggle'); if(ot) ot.onclick=()=>{ state.showOrder=!state.showOrder; render(); };
   const na=$('#nextadd'); if(na) na.onclick=()=>openAddSheet('');
@@ -2484,7 +2581,7 @@ function weekFoot(p){
 function doneBox(p){
   const par=p.review?.envoye_par?` par ${esc(prenom(p.review.envoye_par))}`:'';
   if(p.status==='remarques') return `<div class="done">${ic('send')}<span><b>Remarques envoyées à Claude${par}</b>Sur le Mac, dites-lui « c'est envoyé » : il revient avec une version ${p.version+1}.</span></div>`;
-  if(p.status==='validee') return `<div class="done">${ic('check')}<span><b>Menu validé${par}</b>Il est dans l'onglet Semaine. Claude enchaîne sur la liste de courses.</span></div>`;
+  if(p.status==='validee') return `<div class="done">${ic('check')}<span><b>Menu validé${par}</b>Il est dans l'onglet Semaine et reste modifiable. Claude prépare les ingrédients ; quand le menu est bon, figez-le pour faire le tour du placard.</span></div>`;
   return '';
 }
 let revSaveT=null;
@@ -2573,10 +2670,14 @@ async function loadWeekData(){
     sb.from('feedback_log').select('content,created_at').eq('kind','autre').gte('created_at',addDays(t,-10))
   ];
   if(w){ q.push(sb.from('meals').select('*').eq('week_id',w.id).order('day')); q.push(sb.from('shopping_items').select('*').eq('week_id',w.id).order('label')); }
-  const r=await Promise.all(q);
+  // tour du placard : les ingrédients de la semaine de la prochaine commande drive, et ses repas
+  const vw=verifWeek(), qv=vw?[sb.from('shopping_items').select('*').eq('week_id',vw.id), sb.from('meals').select('*').eq('week_id',vw.id)]:[];
+  const [r, rv]=await Promise.all([Promise.all(q), Promise.all(qv)]);
   state.backlog=r[0].data||[]; state.near=(r[1].data||[]).map(cleanMeal); state.dishes=r[2].data||[];
   state.feedback=(r[3].data||[]).filter(f=>f.content?.type==='avis_repas');
-  state.meals=w?(r[4].data||[]).map(cleanMeal):[]; state.items=w?(r[5].data||[]):[];
+  state.meals=w?(r[4].data||[]).map(cleanMeal):[]; state.items=w?(r[5].data||[]).filter(i=>!isVerif(i)):[];
+  state.verif=vw?(rv[0].data||[]).filter(i=>isVerif(i) || i.verif):[]; state.verifMeals=vw?(rv[1].data||[]).map(cleanMeal):[];
+  if(state.verifOpen && !state.verif.length) state.verifOpen=false;
   render();
 }
 async function checkMember(){
