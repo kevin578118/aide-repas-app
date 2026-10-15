@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-0//xqduNv4oFg2IeEIT+NF0FMUzypNMJFBphW5FrFmA='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-0FNq7fA1lPkxGJuVp6Wp0X8DONVl7o/HvFpAMSjAkyc='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -388,7 +388,13 @@ nav.tabs .ico{position:relative;display:inline-flex}
 /* Feuilles (bas d'écran) */
 .sheet-bg{position:fixed;inset:0;background:var(--scrim);z-index:20;display:none}
 .sheet-bg.on{display:block}
-.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-radius:22px 22px 0 0;padding:10px 16px calc(20px + env(safe-area-inset-bottom));z-index:21;max-width:640px;margin:0 auto;transform:translateY(105%);transition:transform .2s;max-height:92vh;overflow:auto}
+.sheet{position:fixed;left:0;right:0;bottom:var(--kb,0px);background:var(--bg);border-radius:22px 22px 0 0;padding:10px 16px calc(20px + env(safe-area-inset-bottom));z-index:21;max-width:640px;margin:0 auto;transform:translateY(105%);transition:transform .2s;max-height:min(92vh,calc(var(--vvh,100vh) - 8px - env(safe-area-inset-top)));overflow:auto;overscroll-behavior:contain}
+/* Clavier ouvert (classe kb posée par le script, voir « Clavier ») : la feuille et le message se posent au-dessus,
+   la barre d'onglets et la barre d'ajout s'effacent le temps de la saisie */
+html.kb .sheet{padding-bottom:14px}
+html.kb nav.tabs,html.kb .addbar{display:none}
+html.kb body .snack{bottom:calc(var(--kb) + 12px)}
+html.kb .cook{bottom:var(--kb)}
 .sheet.on{transform:none}
 .grab{width:40px;height:4px;border-radius:2px;background:var(--line2);margin:0 auto 12px}
 .sheet-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
@@ -539,7 +545,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.15-0606';
+const APP_VERSION = '2026.10.15-0734';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1257,13 +1263,15 @@ function openAddSheet(prefill){
     if(!await addItem(label, ch, h, qty, true, null, tw)) return;
     if(!s.classList.contains('on')) return;
     s.querySelector('#mqdone').innerHTML=`« ${esc(label)} » ajouté sur ${esc(targetLabel(tw))}${keepIt&&h?', et gardé dans les classiques':''}. Autre chose ?`;
-    refresh(); inp.focus();
+    refresh(); inp.focus({preventScroll:true});
   };
   inp.oninput=refresh; go.onclick=add;
   inp.onkeydown=e=>{ if(e.key==='Enter') add(); };
   qq.onkeydown=e=>{ if(e.key==='Enter') add(); };
   if(typeof prefill==='string') inp.value=prefill;
-  refresh(); setTimeout(()=>inp.focus(), 60);
+  // Focus tout de suite (dans le tap) : sur iPhone c'est ce qui ouvre le clavier ; preventScroll évite que Safari
+  // fasse défiler la page vers la feuille encore en train de monter
+  refresh(); inp.focus({preventScroll:true});
 }
 // Un classique (household_items sans placard) : nom, rayon, magasin, quantité habituelle ; retour à la feuille d'ajout
 function openClassicSheet(id){
@@ -1594,7 +1602,7 @@ function openPlAdd(prefill){
     if(x && st!=='ok') await setStock(x, st); else { render(); toast(`${label} ajouté au placard`); }
   };
   inp.oninput=refresh; go.onclick=add; inp.onkeydown=e=>{ if(e.key==='Enter') add(); };
-  refresh(); if(!prefill) setTimeout(()=>inp.focus(), 60);
+  refresh(); if(!prefill) inp.focus({preventScroll:true});
 }
 function bindInventaire(){
   document.querySelectorAll('#app [data-stk]').forEach(b=>b.onclick=()=>{ const x=state.placard.find(p=>p.id===b.dataset.stk); if(x) setStock(x, b.dataset.s); });
@@ -1798,6 +1806,16 @@ async function confirmDriveOrder(w, all, allIn, btns){
 function openSheet(html){ const s=$('#sheet'); s.innerHTML=html; s.scrollTop=0; s.classList.add('on'); $('#sheetbg').classList.add('on'); const c=s.querySelector('[data-close]'); if(c) c.onclick=closeSheet; }
 function closeSheet(){ $('#sheet').classList.remove('on'); $('#sheetbg').classList.remove('on'); }
 $('#sheetbg').onclick=closeSheet;
+// Clavier : sur iPhone la fenêtre ne rétrécit pas quand le clavier s'ouvre, seule la zone visible (visualViewport) le fait.
+// On en tire la hauteur cachée par le clavier (--kb) et la hauteur visible (--vvh) pour garder les feuilles au-dessus,
+// puis on ramène le champ actif en vue dans la feuille.
+(()=>{ const vv=window.visualViewport; if(!vv) return; const r=document.documentElement; let raf=0, last=-1;
+  const upd=()=>{ raf=0; const kb=Math.max(0, Math.round(window.innerHeight-vv.height-vv.offsetTop)), open=kb>80;
+    r.style.setProperty('--kb', (open?kb:0)+'px'); r.style.setProperty('--vvh', Math.round(vv.height)+'px'); r.classList.toggle('kb', open);
+    if(open && kb!==last){ const a=document.activeElement; if(a && a.closest && a.closest('.sheet,.cook')) a.scrollIntoView({block:'nearest'}); }
+    last=open?kb:0; };
+  const q=()=>{ if(!raf) raf=requestAnimationFrame(upd); };
+  vv.addEventListener('resize', q); vv.addEventListener('scroll', q); upd(); })();
 const closeBtn = `<button class="iconbtn round" data-close aria-label="Fermer">${ic('x','s')}</button>`;
 
 function openEditSheet(id){
