@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-YUjhinb3YduV4M0IsOow/o1X1Vxu94yKBkoLFy2rE5s='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-cElEXM1xSCgjpMHjzVltc9uvZesZCwf2UrsxgrcnPAE='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -416,6 +416,9 @@ html.kb .cook{bottom:var(--kb)}
 .snack{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));max-width:608px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:4px 6px 4px 16px;border-radius:14px;background:var(--ink);color:var(--on-ink);z-index:30;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .2s,transform .2s}
 .snack.on{opacity:1;transform:none;pointer-events:auto}
 body.nonav .snack{bottom:calc(20px + env(safe-area-inset-bottom))}
+/* feuille ouverte : le message en bas de l'écran, pour ne pas cacher les lignes qu'on touche */
+body .sheet.on~.snack{bottom:calc(12px + env(safe-area-inset-bottom))}
+html.kb body .sheet.on~.snack{bottom:calc(var(--kb) + 12px)}
 .snack span{flex:1;font-size:15px;font-weight:500;padding:12px 0}
 .snack button{background:transparent;color:var(--snack-action);font-weight:600}
 
@@ -545,7 +548,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.15-0746';
+const APP_VERSION = '2026.10.16-2221';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1246,9 +1249,22 @@ function openAddSheet(prefill){
     hh.querySelectorAll('[data-hh]').forEach(b=>b.onclick=async()=>{
       const label=b.dataset.hh, ex=pendingFor(label);
       if(ex) await delItem(ex.id);
-      else { const h=state.household.find(x=>x.label===label); await addItem(label, h?.channel||'drive', h, null, true, null, pick===undefined?undefined:dest()); }
+      else { const h=state.household.find(x=>x.label===label), c=h?.channel||'drive', tw=pick===undefined?targetWeek(c):dest();
+        if(await addItem(label, c, h, null, true, null, tw)) addedSnack(label, c, tw, state.justAdded); }
       if(s.classList.contains('on')) refresh();
     });
+    // Le + d'un classique suit la règle Drive / magasin : on dit où il est parti, et s'il n'est pas sur cette
+    // semaine (commande drive passée), on propose de l'y remettre
+    const addedSnack=(label, c, tw, id)=>{
+      const lw=liveWeek(), msg=`« ${label} » ajouté ${c==='drive'?'au Drive':'chez '+chName(c)}, sur ${targetLabel(tw)}.`;
+      if(!lw || tw===lw || !id) return snack(msg, null, null, 4000);
+      snack(msg, 'Plutôt cette semaine', async()=>{
+        const {error}=await sb.from('shopping_items').update({week_id:lw.id}).eq('id',id);
+        if(error) return toast('Erreur : '+error.message);
+        await loadWeekData(); if(s.classList.contains('on')) refresh();
+        snack(c==='drive'&&driveOrdered(lw) ? 'Mis sur cette semaine : la commande drive est passée, à acheter à part.' : 'Mis sur la liste de cette semaine.', null, null, 4000);
+      }, 8000);
+    };
   };
   s.querySelector('#mqdestb').onclick=()=>{ destOpen=!destOpen; refresh(); };
   s.querySelectorAll('[data-ach]').forEach(b=>b.onclick=()=>{ ch=b.dataset.ach; s.querySelectorAll('[data-ach]').forEach(x=>x.setAttribute('aria-checked', x===b)); refresh(); });
