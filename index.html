@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-719Sfzl2c+5P0ctR2e6y1QoIz0VzbohuLNs5qOHJDbE='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-RjkuvG3BBZ9574YWPYri1Y0oUaywuBzDOVZPMiWLTdk='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -625,7 +625,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.17-1047';
+const APP_VERSION = '2026.10.17-1414';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1930,7 +1930,8 @@ function driveBaseOf(url){
   let u; try{ u=new URL(String(url||'').trim()); }catch{ return null; }
   const h=u.hostname.toLowerCase();
   if(u.protocol!=='https:' || u.username || u.password || u.port || !(h==='leclercdrive.fr' || h.endsWith('.leclercdrive.fr'))) return null;
-  const m=u.pathname.match(/^\/magasin-[^\/]+/i); return m ? u.origin+m[0] : null;
+  // La page d'accueil du magasin finit par .aspx (magasin-…-ville.aspx) : la recherche est sous magasin-…-ville/
+  const m=u.pathname.match(/^\/magasin-[^\/]+?(?=\.aspx(?:\/|$)|\/|$)/i); return m ? u.origin+m[0] : null;
 }
 function driveBase(){ return driveBaseOf(state.settings.leclerc_drive_url); }
 function driveStore(){
