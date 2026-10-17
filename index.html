@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-Kop5hclVuB6Fu+H/yct9NcJCOPOvFA8bT3QT57Cysbg='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-La3DPMf2DDjWGpRTsbl4MCOQJkBBYD80JEHAKpxqSSg='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -625,7 +625,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.17-1430';
+const APP_VERSION = '2026.10.17-1447';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -2001,12 +2001,16 @@ function bindDrive(){
 // réutilisée à chaque « Chercher » ; l'app installée se range sur la moitié gauche. Sur téléphone : un onglet, comme avant.
 let leclercWin=null;
 function sideBySide(){ return matchMedia('(hover: hover) and (pointer: fine)').matches && screen.availWidth>=1100; }
+// Pas de w.opener=null : Chrome refuse alors de naviguer ou de fermer la fenêtre, et chaque « Chercher » en empilait
+// une nouvelle. Leclerc ne peut rien lire de l'app (autre origine), seulement la faire changer de page.
 function openLeclercSide(url){
-  if(leclercWin && !leclercWin.closed){ try{ leclercWin.location.href=url; leclercWin.focus(); return true; }catch{} }
+  if(leclercWin && !leclercWin.closed){
+    try{ leclercWin.location.href=url; leclercWin.focus(); return true; }catch{}
+    try{ leclercWin.close(); }catch{}   // fenêtre devenue inaccessible : on la ferme avant d'en ouvrir une autre
+  }
   const L=screen.availLeft||0, T=screen.availTop||0, W=Math.floor(screen.availWidth/2), H=screen.availHeight;
-  const w=window.open(url, 'leclerc', `popup,left=${L+W},top=${T},width=${W},height=${H}`);
+  const w=window.open(url, '_blank', `popup,left=${L+W},top=${T},width=${W},height=${H}`);
   if(!w) return false;   // fenêtre bloquée : le lien s'ouvre normalement
-  try{ w.opener=null; }catch{}   // la page Leclerc ne doit pas pouvoir agir sur l'app
   leclercWin=w;
   if(matchMedia('(display-mode: standalone)').matches && window.outerWidth>W+40){ try{ window.moveTo(L,T); window.resizeTo(W,H); }catch{} }
   return true;
