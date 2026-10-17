@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-NTI/0tPPrIOd5SC2Yhso/C815kJdTauz5uptH2KKiPc='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-Kop5hclVuB6Fu+H/yct9NcJCOPOvFA8bT3QT57Cysbg='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -625,7 +625,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.17-1424';
+const APP_VERSION = '2026.10.17-1430';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1962,7 +1962,7 @@ function renderDrive(){
     h+=`<section class="dcard" aria-label="${esc(it.label)}"><div class="dh"><span class="dl">${esc(it.label)}</span>${it.qty?`<span class="dq">${esc(it.qty)}</span>`:''}</div>
       ${it.drive_product?`<div class="dp">Conseillé : <b>${esc(it.drive_product)}</b></div>`:''}
       ${uses.length?`<div class="dp">Pour ${esc(uses.map(l=>whenShort(l.meal).toLowerCase()+' ('+shortTitle(l.meal.title)+')').join(', '))}</div>`:''}
-      <div class="da">${extLink(driveSearch(it), 'btn outline', `Chercher${ic('ext','s')}`)}
+      <div class="da">${extLink(driveSearch(it), 'btn outline dsearch', `Chercher${ic('ext','s')}`)}
       <button class="btn primary" data-dcart="${it.id}" data-v="mis">${ic('check','s')}Dans le panier</button>
       <button class="dmiss" data-dcart="${it.id}" data-v="introuvable">Pas trouvé sur le drive</button></div></section>`;
   }
@@ -1995,6 +1995,21 @@ function bindDrive(){
     render(); toast(`« ${it.label} » passe chez ${FOYER.magasin}`);
   });
   const od=$('#drorder'); if(od) od.onclick=openDriveOrder;
+  if(sideBySide()) document.querySelectorAll('a.dsearch').forEach(a=>a.onclick=e=>{ if(openLeclercSide(a.href)) e.preventDefault(); });
+}
+// Sur ordinateur (souris, grand écran) : Leclerc s'ouvre dans une seule fenêtre, sur la moitié droite de l'écran,
+// réutilisée à chaque « Chercher » ; l'app installée se range sur la moitié gauche. Sur téléphone : un onglet, comme avant.
+let leclercWin=null;
+function sideBySide(){ return matchMedia('(hover: hover) and (pointer: fine)').matches && screen.availWidth>=1100; }
+function openLeclercSide(url){
+  if(leclercWin && !leclercWin.closed){ try{ leclercWin.location.href=url; leclercWin.focus(); return true; }catch{} }
+  const L=screen.availLeft||0, T=screen.availTop||0, W=Math.floor(screen.availWidth/2), H=screen.availHeight;
+  const w=window.open(url, 'leclerc', `popup,left=${L+W},top=${T},width=${W},height=${H}`);
+  if(!w) return false;   // fenêtre bloquée : le lien s'ouvre normalement
+  try{ w.opener=null; }catch{}   // la page Leclerc ne doit pas pouvoir agir sur l'app
+  leclercWin=w;
+  if(matchMedia('(display-mode: standalone)').matches && window.outerWidth>W+40){ try{ window.moveTo(L,T); window.resizeTo(W,H); }catch{} }
+  return true;
 }
 function bindDriveUrl(){
   const go=$('#drsave'); if(!go) return;
