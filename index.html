@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-IkcPN423ezdBkVD+sKqf1jK+jwa3UcVjWHkq8XTqB5s='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-719Sfzl2c+5P0ctR2e6y1QoIz0VzbohuLNs5qOHJDbE='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -438,6 +438,11 @@ button.sm{min-height:40px;padding:0 12px;font-size:14px;border-radius:10px;flex:
 .vr .stk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:8px}
 .vr .stk button{min-width:0}
 .vr.lock{opacity:.6}
+.vr .vm{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.vmeal{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line2);font-size:13px;color:var(--muted);text-decoration:none}
+a.vmeal{border-color:transparent;background:var(--accent-soft);color:var(--accent-soft-text);font-weight:500}
+.tophb{margin:0 0 14px}
+.tophb .banner{margin-top:0}
 .strow{width:100%;display:flex;align-items:center;gap:12px;padding:8px 0;min-height:56px;background:none;border-radius:0;border-bottom:1px solid var(--line);text-align:left;font-weight:500}
 .strow[aria-checked="true"] .ck{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .strow .sto{font-size:13px;color:var(--muted);flex:none}
@@ -620,7 +625,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.17-0816';
+const APP_VERSION = '2026.10.17-1047';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -989,9 +994,9 @@ function weekNav(){
 }
 function nextMondayAfterToday(){ return addDays(todayIso(), 7-dayIdx(todayIso())); }
 function needPrep(){ return dayIdx(todayIso())>=3 && !state.weeks.some(w=>w.week_start===nextMondayAfterToday()); }
-function prepBanner(force){
+function prepBanner(force, noTour){
   const pb=propBanner(); if(pb) return pb;   // une proposition de Claude attend : elle passe devant
-  const fb=freezeBanner(); if(fb) return fb;   // puis le menu à figer, ou le tour du placard en cours
+  const fb=noTour?'':freezeBanner(); if(fb) return fb;   // puis le menu à figer, ou le tour du placard en cours
   if(state.draft) return `<button class="banner" id="draftbanner">${ic('note')}<span><b>Semaine du ${fmtDate(state.draft.week_start)} préparée</b>En attente du menu de Claude. Touchez pour modifier.</span></button>`;
   if(force || needPrep()) return `<button class="banner" id="prep">${ic('note')}<span><b>Préparer la semaine qui vient</b>2 minutes de questions, puis Claude fait le menu.</span></button>`;
   return '';
@@ -1002,9 +1007,11 @@ function renderHome(){
   const all=nearMeals(), fut=all.filter(m=>!isPast(m)), next=fut[0], after=fut[1];
   const toRate=all.filter(m=>isPast(m) && canRate(m)).pop();
   let h=`<header class="top"><span class="date">${esc(longDate(todayIso()))}</span>${avatarBtn()}</header><main>`;
+  // Menu à figer ou tour du placard en cours : en tête, la commande drive en dépend
+  const tour=propBanner()?'':freezeBanner(); if(tour) h+=`<div class="tophb">${tour}</div>`;
   if(!next){
     h+=`<div class="empty"><b>Rien de prévu pour l'instant.</b><br>${state.draft?'La semaine est préparée : le menu arrive dès que Claude l\'a fait.':`Préparez la semaine ici, puis ${personne(FOYER.claude)?`${esc(personne(FOYER.claude).prenom)} lance`:'lancez'} Claude sur le Mac.`}</div>`;
-    h+=prepBanner(true);
+    h+=prepBanner(true, !!tour);
   } else {
     // Le repas d'après (ce soir, le plus souvent) peut se préparer en avance : bascule entre les deux.
     const alt=after && !NO_COOK.includes(after.kind) ? after : null, showAlt=!!alt && state.homeAlt===alt.id;
@@ -1050,7 +1057,7 @@ function renderHome(){
         <button data-rate="jamais" data-id="${toRate.id}">Plus jamais</button>
       </div></section>`;
   }
-  if(next) h+=prepBanner(false);
+  if(next) h+=prepBanner(false, !!tour);
   return h+'</main>';
 }
 
@@ -1711,7 +1718,11 @@ async function freezeMenu(){
 function verifMeals(it){ return (it.for_meals||[]).map(l=>state.verifMeals.find(m=>m.id===l.meal_id)).filter(Boolean).sort(mealSort); }
 function verifRow(it){
   const v=verifOf(it), lock=!isVerif(it) && (it.status!=='a_acheter' || !!it.drive_cart), uses=verifMeals(it);
-  return `<div class="vr ${lock?'lock':''}"><div class="vh"><span class="grow"><span class="an">${esc(it.label)}</span>${uses.length?`<span class="am">Pour ${esc(uses.map(m=>whenShort(m).toLowerCase()+' ('+shortTitle(m.title)+')').join(', '))}</span>`:''}</span>${it.qty?`<span class="aq">${esc(it.qty)}</span>`:''}</div>
+  // Les repas qui l'utilisent, avec le lien de la recette quand il y en a un (pour vérifier une quantité)
+  const ms=uses.map(m=>{ const t=esc(cap(whenShort(m))+' · '+shortTitle(m.title));
+    return extLink(m.url, 'vmeal', `${t}${ic('ext','s')}`, `Recette de ${m.title}, ${whenLong(m)}`) || `<span class="vmeal">${t}</span>`; }).join('');
+  return `<div class="vr ${lock?'lock':''}"><div class="vh"><span class="grow"><span class="an">${esc(it.label)}</span></span>${it.qty?`<span class="aq">${esc(it.qty)}</span>`:''}</div>
+    ${ms?`<div class="vm">${ms}</div>`:''}
     ${lock?`<span class="am">${it.status==='achete'?'Déjà pris':'Déjà au panier'}</span>`
       :`<div class="stk" role="group" aria-label="${esc(it.label)}">${Object.keys(VERIF).map(k=>`<button data-vf="${it.id}" data-v="${k}" data-s="${k==='manque'?'fini':k}" aria-pressed="${v===k}">${esc(VERIF[k])}</button>`).join('')}</div>`}</div>`;
 }
@@ -1766,7 +1777,8 @@ function renderInventaire(){
   let h=`<header class="top"><div class="grow"><h1>Inventaire</h1><div class="date">${P.length} articles suivis${last?` · mis à jour ${agoLabel(last)}`:''}</div></div>
     <button class="iconbtn round" id="pladdopen" aria-label="Ajouter un article au placard">${ic('plus','s')}</button></header><main class="inv">`;
   if(!P.length) return h+`<div class="empty"><b>Le placard est vide.</b><br>Touchez + pour ajouter ce que vous avez toujours d'avance.</div></main>`;
-  const q=state.invQ.trim();
+  const q=state.invQ.trim(), tour=freezeBanner();
+  if(tour && !q) h+=`<div class="tophb">${tour}</div>`;
   h+=`<div class="find" role="search" style="margin:4px 0 6px">${ic('search','s')}<input id="invq" type="search" value="${esc(state.invQ)}" placeholder="Chercher dans le placard…" aria-label="Chercher dans le placard" autocomplete="off" enterkeyhint="search">${q?`<button class="clr" id="invclr" aria-label="Effacer la recherche">${ic('x','s')}</button>`:''}</div>`;
   if(q){
     const t=fold(q), xs=P.filter(x=>fold(x.label).includes(t)), exact=P.some(x=>fold(x.label)===t);
