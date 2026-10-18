@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-La3DPMf2DDjWGpRTsbl4MCOQJkBBYD80JEHAKpxqSSg='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-LhDaMTtCgphb4gLtWD5MqIO3j9tOq/XqGVYlyUxMsFg='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -520,6 +520,27 @@ html.kb body .sheet.on~.snack{bottom:calc(var(--kb) + 12px)}
 .kv > span:first-child{color:var(--muted);font-size:14px}
 .kv b{font-weight:600}
 .kv .sub{display:block}
+/* La recette dans le mode cuisine (meals.recipe) */
+.cook .cook-top{position:sticky;top:calc(-14px - env(safe-area-inset-top));z-index:1;background:var(--bg);margin:calc(-14px - env(safe-area-inset-top)) -20px 0;padding:calc(14px + env(safe-area-inset-top)) 20px 8px}
+.ck-mini{display:none;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:22px;background:var(--accent);color:var(--on-accent);font-weight:600;font-variant-numeric:tabular-nums}
+.ck-mini.on{display:inline-flex}
+.cook-top .pill{min-width:0}
+#locktxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck-rec h3{font-size:20px;line-height:1.2;margin:0;font-weight:600;letter-spacing:-.01em}
+.ck-rech{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:4px}
+.ck-parts{display:flex;align-items:center;border:1px solid var(--line2);border-radius:24px;padding:2px}
+.ck-parts button{width:44px;height:44px;min-height:44px;padding:0;border-radius:22px;background:transparent;font-size:22px;line-height:1}
+.ck-parts button:disabled{opacity:.35}
+.ck-parts span{min-width:62px;text-align:center;font-size:15px;font-weight:600}
+.ck-ings{list-style:none;margin:0;padding:0}
+.ck-ings li{display:grid;grid-template-columns:88px minmax(0,1fr);gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:16px;line-height:1.35}
+.ck-ings .q{font-weight:600;font-variant-numeric:tabular-nums}
+.ck-steps{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ck-step{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;background:var(--surface);border-radius:16px;padding:16px 14px;font-size:17px;line-height:1.5;font-weight:400}
+.ck-step .n{flex:none;width:30px;height:30px;border-radius:15px;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-size:15px;font-weight:700}
+.ck-step[aria-pressed="true"]{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.ck-step[aria-pressed="true"] .n{background:var(--line);color:var(--muted)}
+.ck-tmin{display:inline-flex;align-items:center;gap:6px;margin:8px 0 0 58px;min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--line2);background:transparent;font-size:14px;font-weight:600;color:var(--accent)}
 
 /* Connexion */
 .login{max-width:400px;margin:0 auto;padding:calc(56px + env(safe-area-inset-top)) 20px 24px}
@@ -625,7 +646,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.17-1447';
+const APP_VERSION = '2026.10.18-1946';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -771,7 +792,16 @@ const SLOTS=['midi','soir'], PLANNINGS=['matin','soir','repos'];
 // Un repas de la table meals
 function cleanMeal(m){
   return {...m, slot:oneOf(m.slot,SLOTS,'soir'), kind:keyOf(m.kind,KIND,'assemblage'), title:txt(m.title,300), url:safeUrl(m.url),
-    prep_minutes:int(m.prep_minutes,0,1440), reheat_minutes:int(m.reheat_minutes,0,240)};
+    prep_minutes:int(m.prep_minutes,0,1440), reheat_minutes:int(m.reheat_minutes,0,240), recipe:cleanRecipe(m.recipe)};
+}
+// La recette lue sur le lien (meals.recipe, migration 0020, scripts/recette.py) : quantités pour `base` parts ;
+// `entier` : plat qu'on ne coupe pas (quiche, pizza), compté en plats entiers de `base` parts
+function cleanRecipe(r){
+  if(!isObj(r)) return null;
+  const num=v=>typeof v==='number' && isFinite(v) && v>0 && v<100000 ? v : null;
+  const ingredients=(Array.isArray(r.ingredients)?r.ingredients:[]).filter(isObj).map(i=>({q:num(i.q), u:txt(i.u,20), n:txt(i.n,120)})).filter(i=>i.n).slice(0,40);
+  const etapes=strList(r.etapes,600,30);
+  return ingredients.length||etapes.length ? {base:int(r.base,1,40)||1, entier:r.entier===true, ingredients, etapes} : null;
 }
 // Un repas d'une proposition de Claude (menu_proposals.content.repas) : seuls les champs utilisés par l'app sont gardés
 function cleanPropMeal(m){
@@ -781,7 +811,7 @@ function cleanPropMeal(m){
   const h=isObj(m.historique) ? m.historique : null, av=isObj(h?.dernier_avis) ? h.dernier_avis : null;
   return {day, slot, title:txt(m.title,300), kind:keyOf(m.kind,KIND,'assemblage'), url:safeUrl(m.url), prep_minutes:int(m.prep_minutes,0,1440),
     notes:txtOrNull(m.notes), pourquoi:txtOrNull(m.pourquoi), equilibre:e, proteine_type:keyOf(m.proteine_type,PROT), base:keyOf(m.base,BASES),
-    modifie:m.modifie===true, ingredients_cles:strList(m.ingredients_cles,120,40),
+    modifie:m.modifie===true, ingredients_cles:strList(m.ingredients_cles,120,40), recipe:cleanRecipe(m.recipe),
     historique:h ? {last_served:isoDay(h.last_served), times_served:int(h.times_served), rating:oneOf(h.rating,['valide','a_tester','banni']), notes:txtOrNull(h.notes),
       dernier_avis:av && has(AVIS,av.avis) ? {avis:av.avis, par:txt(av.par,80), le:isoDay(av.le)} : null} : null};
 }
@@ -2209,7 +2239,7 @@ async function openSwap(id){
 async function doSwap(a0, b0){
   const A={...a0}, B={...b0};
   const content=m=>({title:m.title, kind:m.kind, url:safeUrl(m.url), prep_minutes:m.prep_minutes??null, notes:m.notes??null,
-    prepared_at:m.prepared_at??null, prepared_by:m.prepared_by??null, reheat_minutes:m.reheat_minutes??null, reheat_note:m.reheat_note??null});
+    prepared_at:m.prepared_at??null, prepared_by:m.prepared_by??null, reheat_minutes:m.reheat_minutes??null, reheat_note:m.reheat_note??null, recipe:m.recipe??null});
   const slot=m=>({id:m.id, week_id:m.week_id, day:m.day, slot:m.slot});
   // Une seule requête : chaque créneau garde sa place, seul le contenu change (pas de conflit jour/créneau).
   const rows=[{...slot(A),...content(B)}, {...slot(B),...content(A)}];
@@ -2275,12 +2305,15 @@ function openCook(id, mode='cuisine'){
   else { cook.total=cook.base; cook.left=cook.total; cook.running=false; cook.endAt=0; }
   const d=dishFor(m), cons=constraints(m.day,m.slot,ctxOf(m)), when=whenLabel(m);
   let reheat=m.reheat_minutes ?? 20;
+  const rec = mode!=='rechauffe' && m.recipe ? m.recipe : null;
+  if(rec) recLoad(m);
   const eyebrow = mode==='avance' ? `${ic(m.slot==='soir'?'moon':'clock','s')}<span>Pour ${esc(when)} · préparé en avance</span>`
     : mode==='rechauffe' ? `${ic('flame','s')}<span>${esc(cap(when))} · à réchauffer</span>`
     : `${ic('cloche','s')}<span>${esc(cap(when))}</span>`;
   const el=$('#cook');
   el.innerHTML=`<div class="cook-in">
     <div class="cook-top"><button class="iconbtn round" id="cclose" aria-label="Quitter le mode cuisine">${ic('x','s')}</button>
+      <button class="ck-mini" id="tmini" aria-label="Revenir au minuteur">${ic('clock','s')}<span id="tminit"></span></button>
       <span class="pill" id="lockpill">${ic('sun','s')}<span id="locktxt">Écran…</span></span></div>
     <div><div class="eyebrow">${eyebrow}</div><h2>${esc(m.title)}</h2></div>
     <section class="timer" aria-label="Minuteur">
@@ -2296,8 +2329,9 @@ function openCook(id, mode='cuisine'){
       ${m.notes?`<div class="kv"><span>Notes</span><span>${esc(m.notes)}</span></div>`:''}
       ${cons.length?`<div class="kv"><span>${m.slot==='midi'?'Ce midi':'Ce soir'}</span><span>${esc(cons.map(c=>c.label).join(' · '))}</span></div>`:''}
     </section>
-    ${extLink(m.url, 'btn big outline', `Ouvrir la recette ${ic('ext','s')}`)}
+    ${rec?recipeHtml(m):extLink(m.url, 'btn big outline', `Ouvrir la recette ${ic('ext','s')}`)}
     <button class="btn outline" id="cmiss">${ic('jar','s')}Il manque quelque chose ?</button>
+    ${rec?extLink(m.url, 'btn outline', `Voir la recette et la vidéo sur ${esc(recHost(m.url)||'le site')} ${ic('ext','s')}`):''}
     ${mode==='avance'?`<section class="advance" aria-labelledby="advt"><h3 id="advt">${esc(cap(when))}, il faudra…</h3>
       <div class="chips" role="radiogroup" aria-labelledby="advt">${[0,10,20,30].map(v=>`<button role="radio" aria-checked="${v===reheat}" class="${v===reheat?'on':''}" data-rh="${v}">${v?v+' min':'Rien, c\'est froid'}</button>`).join('')}</div>
       <label class="l" for="rhnote">Consigne (facultatif)</label>
@@ -2331,8 +2365,71 @@ function openCook(id, mode='cuisine'){
     saveCook(); updateCook(true);
   };
   $('#treset').onclick=()=>{ cook.running=false; cook.done=false; cook.total=cook.base; cook.left=cook.total; saveCook(); updateCook(true); };
+  if(rec) bindRecipe(m, el);
+  $('#tmini').onclick=()=>el.scrollTo({top:0, behavior:'smooth'});
   updateCook(true); clearInterval(cook.tick); cook.tick=setInterval(updateCook, 250);
   acquireLock();
+}
+// La recette dans le mode cuisine : l'écran reste allumé tant que l'app est affichée, pas sur le site de la recette.
+// Parts : adulte = 1, enfant = ½ (reference.md), selon qui mange à ce créneau ; un plat `entier` (quiche, pizza)
+// se compte en plats entiers, le − / + ajoute ou retire un plat.
+// Étapes cochées et nombre de parts gardés sur le téléphone pour ce repas.
+const recSt={id:null, parts:0, done:[]};
+function partsFor(m){
+  const base=m.recipe?.base||1, ids=ctxOf(m).jours?.[DKEYS[dayIdx(m.day)]]?.[m.slot];
+  const who=Array.isArray(ids)&&ids.length ? ids.map(id=>FOYER.personnes.find(x=>x.id===id)).filter(Boolean) : FOYER.personnes;
+  let p=Math.ceil(who.reduce((s,x)=>s+(x.role==='enfant'?0.5:1),0)) || base;
+  return m.recipe?.entier ? Math.ceil(p/base)*base : p;
+}
+function recLoad(m){
+  let s=null; try{ s=JSON.parse(localStorage_get('cookRec')||'null'); }catch{}
+  const n=m.recipe.etapes.length;
+  Object.assign(recSt, s && s.id===m.id ? {id:m.id, parts:int(s.parts,1,80)||partsFor(m), done:(Array.isArray(s.done)?s.done:[]).filter(i=>Number.isInteger(i)&&i>=0&&i<n)}
+    : {id:m.id, parts:partsFor(m), done:[]});
+}
+function recSave(){ localStorage_set('cookRec', JSON.stringify(recSt)); }
+const FRAC={0.25:'¼', 0.5:'½', 0.75:'¾'};
+function fmtQty(q, u){
+  if(q==null) return '';
+  if(/^(g|kg|mg|ml|cl|dl|l)$/i.test(u||'')){ const v=q>=50?Math.round(q/5)*5 : q>=10?Math.round(q) : Math.round(q*10)/10; return String(v).replace('.',',')+' '+u; }
+  const v=Math.max(0.25, Math.round(q*4)/4), e=Math.floor(v), f=FRAC[v-e]||'';
+  return (e&&f ? e+' '+f : e ? String(e) : f)+(u?' '+u:'');
+}
+function ingsHtml(r){
+  return r.ingredients.map(i=>`<li><span class="q">${esc(fmtQty(i.q==null?null:i.q*recSt.parts/r.base, i.u))}</span><span>${esc(i.n)}</span></li>`).join('');
+}
+// « 8 minutes », « 40 à 45 minutes » : un bouton lance le minuteur sur le premier nombre
+function stepMinutes(t){ const x=/(\d+)(?:\s*(?:à|-)\s*\d+)?\s*min(?:utes?)?\b/i.exec(t); const n=x?Number(x[1]):0; return n>=1&&n<=180 ? n : 0; }
+function recipeHtml(m){
+  const r=m.recipe;
+  return `${r.ingredients.length?`<section class="ck-rec" aria-labelledby="ckit">
+      <div class="ck-rech"><h3 id="ckit">Ingrédients</h3>
+        <div class="ck-parts" role="group" aria-label="Nombre de parts"><button id="pless" aria-label="Une part de moins">−</button><span id="pn" aria-live="polite"></span><button id="pmore" aria-label="Une part de plus">+</button></div></div>
+      <ul class="ck-ings" id="cking">${ingsHtml(r)}</ul>
+      <p class="sub" style="margin:8px 0 0">Une part par adulte, une demi-part par enfant.${r.entier?` Recette pour un plat entier de ${esc(r.base)} parts.`:''}</p>
+    </section>`:''}
+    ${r.etapes.length?`<section class="ck-rec" aria-labelledby="ckst"><h3 id="ckst">Étapes</h3>
+      <ol class="ck-steps">${r.etapes.map((t,i)=>{ const mn=stepMinutes(t), on=recSt.done.includes(i);
+        return `<li><button class="ck-step" data-st="${i}" aria-pressed="${on}"><span class="n">${on?ic('check','xs'):i+1}</span><span>${esc(t)}</span></button>${mn?`<button class="ck-tmin" data-tmin="${mn}">${ic('clock','s')}Minuteur ${mn} min</button>`:''}</li>`; }).join('')}</ol>
+    </section>`:''}`;
+}
+function bindRecipe(m, el){
+  const r=m.recipe, pn=$('#pn');
+  const step=r.entier?r.base:1;
+  const parts=()=>{ if(!pn) return; pn.textContent=`${recSt.parts} part${recSt.parts>1?'s':''}`; $('#pless').disabled=recSt.parts<=step; $('#cking').innerHTML=ingsHtml(r); };
+  if(pn){ parts();
+    $('#pless').onclick=()=>{ recSt.parts=Math.max(step,recSt.parts-step); recSave(); parts(); };
+    $('#pmore').onclick=()=>{ recSt.parts=Math.min(80,recSt.parts+step); recSave(); parts(); }; }
+  el.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{
+    const i=Number(b.dataset.st), on=!recSt.done.includes(i);
+    recSt.done=on ? [...recSt.done,i] : recSt.done.filter(x=>x!==i); recSave();
+    b.setAttribute('aria-pressed',on); b.querySelector('.n').innerHTML=on?ic('check','xs'):String(i+1);
+  });
+  el.querySelectorAll('[data-tmin]').forEach(b=>b.onclick=()=>{ unlockAudio();
+    const sec=Number(b.dataset.tmin)*60;
+    Object.assign(cook,{total:sec, left:sec, endAt:Date.now()+sec*1000, running:true, done:false}); saveCook(); updateCook(true);
+    toast(`Minuteur lancé : ${b.dataset.tmin} min`);
+  });
 }
 function closeCook(){
   clearInterval(cook.tick); cook.tick=null;
@@ -2347,6 +2444,7 @@ function updateCook(force){
   const tm=$('#tm'); if(!tm) return;
   tm.textContent = cook.done ? 'C\'est prêt !' : fmtClock(left);
   tm.classList.toggle('fin', cook.done);
+  const mini=$('#tmini'); if(mini){ mini.classList.toggle('on', cook.running||cook.done); $('#tminit').textContent=cook.done?'Prêt !':fmtClock(left); }
   $('#tbar').style.width = Math.min(100, Math.round((1-left/Math.max(1,cook.total))*100))+'%';
   if(force){
     $('#ttot').textContent=`sur ${Math.round(cook.total/60)} min`;
@@ -2931,7 +3029,7 @@ async function validateMenu(){
     : `Valider le menu de la semaine du ${fmtDate(w.week_start)}${second?` (déjà validé par ${prenom(a.par)})`:''} ? Il remplace ce qui est prévu cette semaine-là dans l'app.`)) return;
   state.busy=true; render();
   p.review=Object.assign({}, p.review, {envoye_par:state.session.user.email, envoye_le:new Date().toISOString()});
-  const rows=(p.content?.repas||[]).map(m=>({week_id:w.id, day:m.day, slot:m.slot, title:m.title, kind:keyOf(m.kind,KIND,'assemblage'), url:safeUrl(m.url), prep_minutes:int(m.prep_minutes,1,1440), notes:m.notes||null}));
+  const rows=(p.content?.repas||[]).map(m=>({week_id:w.id, day:m.day, slot:m.slot, title:m.title, kind:keyOf(m.kind,KIND,'assemblage'), url:safeUrl(m.url), prep_minutes:int(m.prep_minutes,1,1440), notes:m.notes||null, recipe:m.recipe||null}));
   const ctx=Object.assign({}, w.context||{}, p.content?.meteo_semaine?{meteo:p.content.meteo_semaine}:{}, {menu_valide_par:state.session.user.email, menu_valide_le:new Date().toISOString(), proposition_version:p.version}, second?{menu_valide_aussi_par:a.par}:{});
   let r=await sb.from('weeks').update({status:'valide', context:ctx}).eq('id',w.id);
   if(!r.error) r=await sb.from('meals').delete().eq('week_id',w.id);
