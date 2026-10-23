@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-LhDaMTtCgphb4gLtWD5MqIO3j9tOq/XqGVYlyUxMsFg='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-GS+1TPXo41HR75x+Fu2yU3Z2iOpv8ihXPBuPCRNfK9s='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -442,6 +442,18 @@ button.sm{min-height:40px;padding:0 12px;font-size:14px;border-radius:10px;flex:
 .vmeal{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line2);font-size:13px;color:var(--muted);text-decoration:none}
 a.vmeal{border-color:transparent;background:var(--accent-soft);color:var(--accent-soft-text);font-weight:500}
 .tophb{margin:0 0 14px}
+/* Rien oublié ? : une carte par rubrique, Il en reste / Ajouter */
+.obr{margin-top:12px}
+.obr .vr{padding:10px 12px 10px 16px}
+.obr .vr:last-child{border-bottom:0}
+.vr.ob{display:flex;align-items:center;gap:10px}
+.vr.ob .grow{min-width:0}
+.vr.ob .an{overflow-wrap:anywhere}
+.vr.ob .am{white-space:normal}
+.vr.ob .stk{display:flex;margin:0}
+.vr.ob .stk button{min-width:0}
+.vr.ob .obadd{width:44px;padding:0;display:grid;place-items:center;border-color:var(--accent);color:var(--accent)}
+.obon{display:inline-flex;align-items:center;gap:6px;flex:none;font-size:14px;font-weight:600;color:var(--accent-soft-text);background:var(--accent-soft);border-radius:999px;padding:8px 12px}
 .tophb .banner{margin-top:0}
 .strow{width:100%;display:flex;align-items:center;gap:12px;padding:8px 0;min-height:56px;background:none;border-radius:0;border-bottom:1px solid var(--line);text-align:left;font-weight:500}
 .strow[aria-checked="true"] .ck{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
@@ -646,7 +658,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.18-1946';
+const APP_VERSION = '2026.10.23-1922';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -751,7 +763,7 @@ const state = {
   email: localStorage_get('email') || '', err:'', busy:false,
   draft:null, wiz:null, drive:false, settings:{}, driveDone:false,
   proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[],
-  verif:[], verifMeals:[], verifOpen:false
+  verif:[], verifMeals:[], verifOpen:false, oubliOpen:false
 };
 function localStorage_get(k){ try{ return localStorage.getItem('ar_'+k); }catch{ return null; } }
 function localStorage_set(k,v){ try{ localStorage.setItem('ar_'+k, v); }catch{} }
@@ -846,7 +858,8 @@ function cleanContext(c){
   for(const x of ['meteo','envies','restes','besoins_maison','invites']) if(has(c,x)) out[x]=txt(c[x]);
   if(has(c,'fruits_legumes')) out.fruits_legumes=oneOf(c.fruits_legumes,['magasin','drive','mixte'],'magasin');
   if(has(c,'placard_manque')) out.placard_manque=strList(c.placard_manque,120,200);
-  for(const x of ['menu_fige_le','menu_fige_par']) if(has(c,x)) out[x]=txt(c[x],200);
+  for(const x of ['menu_fige_le','menu_fige_par','oubli_fait_le','oubli_fait_par']) if(has(c,x)) out[x]=txt(c[x],200);
+  if(has(c,'oubli_vus')) out.oubli_vus=strList(c.oubli_vus,200,500);
   return out;
 }
 const cleanWeek = (w)=>w ? {...w, context:cleanContext(w.context)} : w;
@@ -970,6 +983,7 @@ function render(){
   else if(state.rev){ app.innerHTML=renderReview(); bindReview(); }
   else if(state.wiz){ app.innerHTML=renderWizard(); bindWizard(); }
   else if(state.verifOpen){ app.innerHTML=renderVerif(); bindVerif(); }
+  else if(state.oubliOpen){ app.innerHTML=renderOubli(); bindOubli(); }
   else if(state.drive){ app.innerHTML=renderDrive(); bindDrive(); }
   else {
     const t=state.tab;
@@ -1147,7 +1161,7 @@ const CAT_TONE = { fruits_legumes:'fl', viande_poisson:'vi', frais:'fr', epiceri
 const CAT_ICON = { fruits_legumes:'leaf', viande_poisson:'knife', frais:'milk', epicerie:'jar', surgele:'flake', pain:'bread', boissons:'cup', hygiene:'drop', maison:'home', enfants:'smile', autre:'dots' };
 function curChannel(){ return CHANNELS.includes(state.filter) ? state.filter : 'drive'; }
 // Deux onglets : « Cette semaine » (liveWeek, les derniers manquants) et « Semaine prochaine » (celle du lundi qui vient,
-// sa préparation en 5 étapes puis sa liste). L'onglet choisit la semaine affichée (state.weekIdx, donc state.items) ;
+// sa préparation en 6 étapes puis sa liste). L'onglet choisit la semaine affichée (state.weekIdx, donc state.items) ;
 // les articles des deux semaines sont aussi chargés à part (state.wkItems) pour les compteurs et les étapes.
 function nextWeek(){ const d=nextMondayAfterToday(); return state.weeks.find(w=>w.week_start===d) || null; }
 function itemsOf(w){
@@ -1236,7 +1250,7 @@ function bridgeCard(){
   const st=info.steps[info.cur];
   return `<button class="bridge" data-ctab="next"><span class="bt">${ic('cal')}</span><span class="grow"><span class="be">Semaine prochaine · ${esc(shortRange(nextMondayAfterToday()))}</span><b>${esc(st?st.c.t:'Tout est prêt')}</b><span class="bs">${st?'Voir la préparation':'Voir la liste'}</span></span>${ic('right','s')}</button>`;
 }
-// Préparer la semaine prochaine : 5 étapes ; la première pas faite est l'étape en cours, avec son bouton.
+// Préparer la semaine prochaine : 6 étapes ; la première pas faite est l'étape en cours, avec son bouton.
 // Chaque étape a trois textes : d (faite), c (en cours), p (pas encore).
 function prepInfo(){
   const nd=nextMondayAfterToday(), w=nextWeek(), p=state.proposal, prop=p && ['proposee','remarques'].includes(p.status) && state.propWeek?.week_start===nd ? p : null;
@@ -1260,14 +1274,17 @@ function prepInfo(){
   if(!vs.length) c2={t:'Liste en préparation', s:'Claude écrit la liste de courses du menu.', short:'liste en cours'};
   else if(!frozen) c2={t:'Figer le menu, puis tour du placard', s:`${nb(vs.length,'ingrédient','ingrédients')} du menu à vérifier. Ce qui manque arrive sur la liste.`+(isTarget?'':' Après la commande drive de cette semaine.'), go:isTarget?['freezego','Figer le menu']:null, short:'menu à figer'};
   else c2={t:'Faire le tour du placard', s:`${vLeft} sur ${nb(vs.length,'ingrédient','ingrédients')} à vérifier.`, go:isTarget?['verifgo','Continuer le tour']:null, short:'tour du placard'};
-  // 3. Panier Leclerc, 4. commande drive, 5. le reste sur place
+  // 3. Rien oublié ? (petit déjeuner, goûter, boissons…), 4. panier Leclerc, 5. commande drive, 6. le reste sur place
+  const oc=oubliCount(w), rn=rubNames();
+  const c3={t:'Rien oublié ?', s:oc.seen?`${oc.seen} sur ${nb(oc.n,'article','articles')} passés`:cap(rn.slice(0,3).join(', ').toLowerCase())+'…', bar:oc.seen?oc.seen/oc.n:null, go:isTarget?['oubligo',oc.seen?'Continuer le tour':'Faire le tour']:null, short:'rien oublié ?'};
   const nOrd=xs.filter(i=>chOf(i)==='drive' && !stillToBuy(i)).length, shopName=`${chName('magasin')} et ${chName('boucher')}`;
   const steps=[
     {done:!!w, d:{t:'Menu validé', s:'Dans l\'onglet Semaine'}, c:c1, p:{t:'Faire le menu'}},
     {done:!!w && (ordered || (vs.length ? frozen && !vLeft : xs.length>0)), d:vs.length?{t:'Menu figé, tour du placard fait', s:home?`${nb(home,'ingrédient','ingrédients')} déjà à la maison`:'Ce qui manquait est sur la liste'}:{t:'Liste de courses prête'}, c:c2, p:{t:'Figer le menu, tour du placard', s:'Ce qui manque à la maison arrive sur la liste'}},
+    {done:!!w && (ordered || oubliDone(w) || !oc.n), d:{t:'Rien oublié', s:oc.n?`${rn.length} rubriques passées`:''}, c:c3, p:{t:'Rien oublié ?', s:'Petit déjeuner, goûter, boissons, maison…'}},
     {done:ordered || (drive.length>0 && cart===drive.length), d:{t:'Panier Leclerc rempli', s:ordered?nb(nOrd,'article commandé','articles commandés'):nb(cart,'article au panier','articles au panier')},
       c:drive.length?{t:'Remplir le panier Leclerc', s:cart?`${cart} sur ${nb(drive.length,'article','articles')} au panier`:`${nb(drive.length,'article','articles')}, avec le produit conseillé`, bar:cart/drive.length, go:shown?['drivego',cart?'Continuer le panier':'Remplir le panier']:null, short:'panier à remplir'}
-        :{t:'Remplir le panier Leclerc', s:'Rien au Drive pour l\'instant.', short:'panier à remplir'}, p:{t:'Remplir le panier Leclerc'}},
+        :{t:'Remplir le panier Leclerc', s:'Rien au Drive pour l\'instant.', short:'panier à remplir'}, p:{t:'Remplir le panier Leclerc', s:cart?`${cart} sur ${nb(drive.length,'article','articles')} déjà au panier`:''}},
     {done:ordered, d:{t:w?orderedLabel(w):'', s:nb(nOrd,'article commandé','articles commandés')},
       c:{t:'Passer la commande drive', s:'Une fois passée, touchez « J\'ai validé la commande » en bas du panier. D\'ici là, vos ajouts Drive y entrent.', go:shown?['drivego','Ouvrir le panier']:null, short:'commande à passer'},
       p:{t:'Passer la commande drive', s:'D\'ici là, vos ajouts Drive y entrent'}},
@@ -1279,7 +1296,7 @@ function prepInfo(){
 }
 function renderPrep(info){
   const {steps, cur}=info, n=steps.filter(x=>x.done).length;
-  let h=`<section class="prep" aria-labelledby="prept"><div class="prep-h"><h2 id="prept">Préparer la semaine</h2><span>${n===5?'tout est prêt':n?`${n} étape${n>1?'s':''} sur 5`:'rien de fait'}</span></div>
+  let h=`<section class="prep" aria-labelledby="prept"><div class="prep-h"><h2 id="prept">Préparer la semaine</h2><span>${n===steps.length?'tout est prêt':n?`${n} étape${n>1?'s':''} sur ${steps.length}`:'rien de fait'}</span></div>
     <div class="psegs" aria-hidden="true">${steps.map((x,i)=>`<i class="${x.done?'d':i===cur?'c':''}"></i>`).join('')}</div><ol class="steps">`;
   steps.forEach((x,i)=>{
     const k=x.done?'d':i===cur?'c':'p', v=x[k];
@@ -1329,7 +1346,7 @@ function addBar(){ return `<div class="addbar"><button class="addpill" id="addop
 function renderDriveHead(w){
   if(!w || driveOrdered(w)) return '';
   const t=targetWeek('drive'); if(!t || t.id!==w.id) return '';
-  const dl=driveList(); let h='';
+  const dl=driveList(); let h=oubliBanner(w);
   if(dl.length){ const n=dl.filter(i=>i.drive_cart).length;
     h+=`<button class="leclerc" id="drivego"><span class="lh"><span class="lt">${ic('cart')}</span><span class="grow"><b>Panier Leclerc</b><span class="ls">${n?`${n} sur ${dl.length} articles faits`:`${dl.length} articles, avec le produit conseillé`}</span></span></span>
       <span class="lbar"><i style="width:${Math.round(n/dl.length*100)}%"></i></span><span class="lgo">${n?'Continuer le panier':'Remplir le panier'}${ic('right','s')}</span></button>`; }
@@ -1801,6 +1818,105 @@ function bindVerif(){
     state.verifOpen=false; state.tab='courses'; state.cTab=w && w.id===nextWeek()?.id ? 'next' : 'now'; state.filter='drive'; localStorage_set('filter','drive'); await loadWeekData(); setTab('courses');
   };
 }
+
+// ---------- Rien oublié ? ----------
+// Avant le panier Leclerc, le tour de ce qui ne vient pas du menu, rubrique par rubrique (household_items.rubrique,
+// migration 0021) : petit déjeuner, goûter, boissons… Chaque article : « Il en reste » (weeks.context.oubli_vus) ou
+// « Ajouter » (sur la liste de la semaine, chez son magasin habituel). Fin du tour : weeks.context.oubli_fait_le / _par.
+const RUBRIQUES = ['Petit déjeuner','Goûter','Gâteaux apéro','Boissons','Salle de bain et maison','Fromages enfants','Yaourts enfants'];
+const RUB_TILE = {'Petit déjeuner':['cup','pa'], 'Goûter':['smile','en'], 'Gâteaux apéro':['star','ep'], 'Boissons':['drop','bo'], 'Salle de bain et maison':['home','hy'], 'Fromages enfants':['milk','fr'], 'Yaourts enfants':['milk','su']};
+const rubOf = (x)=>txt(x.rubrique,60).trim();
+const rubItems = ()=>[...state.household, ...state.placard].filter(x=>rubOf(x));
+function rubNames(){ const ns=[...new Set(rubItems().map(rubOf))];
+  return [...RUBRIQUES.filter(r=>ns.includes(r)), ...ns.filter(r=>!RUBRIQUES.includes(r)).sort((a,b)=>a.localeCompare(b,'fr'))]; }
+// La semaine du tour : celle de la prochaine commande drive
+const oubliWeek = ()=>targetWeek('drive');
+const oubliDone = (w)=>!!w?.context?.oubli_fait_le;
+const oubliVus = (w)=>w?.context?.oubli_vus || [];
+function onWeek(label, w){ const l=fold(label); return w ? state.wkItems.find(i=>i.week_id===w.id && ['a_acheter','achete'].includes(i.status) && fold(i.label)===l) || null : null; }
+const oubliSeen = (x, w)=>!!onWeek(x.label, w) || oubliVus(w).includes(x.label);
+function oubliCount(w){ const xs=rubItems(); return {n:xs.length, seen:xs.filter(x=>oubliSeen(x,w)).length}; }
+const openOubli = ()=>{ state.oubliOpen=true; render(); window.scrollTo(0,0); };
+function oubliBanner(w){
+  if(!w || w.id!==oubliWeek()?.id || oubliDone(w) || driveOrdered(w) || !rubItems().length) return '';
+  return `<button class="banner" id="oublibanner">${ic('note')}<span><b>Rien oublié ?</b>${esc(cap(rubNames().slice(0,3).join(', ').toLowerCase()))}… : un tour rapide avant de remplir le panier.</span></button>`;
+}
+function oubliRow(x, w){
+  const on=onWeek(x.label, w), rest=!on && oubliVus(w).includes(x.label), ch=x.channel||'drive';
+  const meta=[txt(x.pour,80), txt(x.notes,120), ch!=='drive'?'chez '+chName(ch):''].filter(Boolean).join(' · ');
+  const sub=[meta, txt(x.default_qty,40)].filter(Boolean).join(' · ');
+  return `<div class="vr ob"><span class="grow"><span class="an">${esc(x.label)}</span>${sub?`<span class="am">${esc(sub)}</span>`:''}</span>
+    ${on?`<span class="obon">${ic('check','xs')} ${on.status==='achete'?'Pris':'Sur la liste'}</span>`
+      :`<span class="stk" role="group" aria-label="${esc(x.label)}"><button data-ob="${x.id}" data-v="reste" data-s="ok" aria-pressed="${rest}">Il en reste</button><button class="obadd" data-ob="${x.id}" data-v="ajout" aria-label="Ajouter ${esc(x.label)} à la liste">${ic('plus','s')}</button></span>`}</div>`;
+}
+function renderOubli(){
+  const w=oubliWeek();
+  let h=`<header class="top"><div class="row"><button class="iconbtn" id="oback" aria-label="Retour">${ic('left','s')}</button><h1>Rien oublié ?</h1></div></header>`;
+  if(w) h+=`<div class="subh"><span>Courses de la semaine du ${esc(rangeLabel(w))}</span></div>`;
+  h+='<main>';
+  if(!w || driveOrdered(w)) return h+`<div class="empty">Pas de commande drive à préparer pour l'instant.</div></main>`;
+  const {n, seen}=oubliCount(w);
+  h+=`<div class="sub"><b style="color:var(--text)">${seen}</b> sur ${n} articles passés</div><div class="prog"><i style="width:${n?Math.round(seen/n*100):0}%"></i></div>`;
+  h+=`<p class="noted">Tout ce qui ne vient pas du menu, rubrique par rubrique. Touchez + pour le mettre sur la liste de courses.</p>`;
+  for(const r of rubNames()){
+    const xs=rubItems().filter(x=>rubOf(x)===r).sort((a,b)=>a.label.localeCompare(b.label,'fr')), left=xs.filter(x=>!oubliSeen(x,w)).length, [icn,tone]=has(RUB_TILE,r)?RUB_TILE[r]:['dots','au'];
+    h+=`<section class="rayon obr" aria-label="${esc(r)}"><div class="rh"><span class="tile t-${tone}">${ic(icn,'s')}</span><h2>${esc(r)}</h2><span class="rc">${left?`${xs.length-left} sur ${xs.length}`:'fait'}</span></div>${xs.map(x=>oubliRow(x,w)).join('')}</section>`;
+  }
+  h+=`<button class="btn outline" id="obnew" style="width:100%;margin-top:16px">${ic('plus','s')}Un article à garder dans une rubrique</button>`;
+  h+=`<div class="dfoot"><button class="btn big ${seen<n?'outline':'primary'}" id="obdone" style="width:100%">${seen<n?'C\'est bon, rien d\'autre':'Rien oublié : on remplit le panier'}</button></div>`;
+  return h+'</main>';
+}
+async function saveWeekCtx(w, patch){
+  const ctx=Object.assign({}, w.context||{}, patch);
+  const {error}=await sb.from('weeks').update({context:ctx}).eq('id',w.id);
+  if(error){ toast('Erreur : '+error.message); return false; }
+  w.context=ctx; return true;
+}
+// Toucher « Il en reste » une deuxième fois le retire
+async function oubliAnswer(x, v){
+  const w=oubliWeek(); if(!w) return;
+  if(v==='ajout'){ if(await addItem(x.label, x.channel||'drive', x, null, true, 'maison', w)) toast(`${x.label} : sur la liste`); return; }
+  const vs=oubliVus(w); if(await saveWeekCtx(w, {oubli_vus: vs.includes(x.label) ? vs.filter(l=>l!==x.label) : [...vs, x.label]})) render();
+}
+function bindOubli(){
+  $('#oback').onclick=()=>{ state.oubliOpen=false; render(); window.scrollTo(0,0); };
+  document.querySelectorAll('[data-ob]').forEach(b=>b.onclick=()=>{ const x=rubItems().find(i=>i.id===b.dataset.ob); if(x) oubliAnswer(x, b.dataset.v); });
+  const nw=$('#obnew'); if(nw) nw.onclick=()=>openRubSheet();
+  const d=$('#obdone'); if(d) d.onclick=async()=>{
+    const w=oubliWeek(); if(!w) return;
+    if(!await saveWeekCtx(w, {oubli_fait_le:new Date().toISOString(), oubli_fait_par:state.session.user.email})) return;
+    state.oubliOpen=false; render(); window.scrollTo(0,0); toast('Rien oublié : place au panier Leclerc');
+  };
+}
+// Un nouvel article dans une rubrique (ou une nouvelle rubrique) : gardé pour les prochaines fois, et sur la liste si coché
+function openRubSheet(){
+  const rs=rubNames(); let ch='drive';
+  openSheet(`<div class="grab"></div><div class="sheet-h"><div><h2>Garder dans une rubrique</h2><div class="sub">Il reviendra à chaque tour « Rien oublié ? ».</div></div>${closeBtn}</div>
+    <label class="l" for="rbl" style="margin-top:0">Article</label><input id="rbl" placeholder="ex. Céréales" autocomplete="off">
+    <div class="two"><div><label class="l" for="rbr">Rubrique</label><select id="rbr">${rs.map(r=>`<option>${esc(r)}</option>`).join('')}<option value="">Nouvelle rubrique…</option></select></div>
+      <div><label class="l" for="rbp">Pour qui</label><input id="rbp" placeholder="optionnel" autocomplete="off"></div></div>
+    <div id="rbnw" hidden><label class="l" for="rbn">Nom de la rubrique</label><input id="rbn" placeholder="ex. Bébé" autocomplete="off"></div>
+    <div class="l" id="rbwl">Où l'acheter</div>
+    <div class="store" role="radiogroup" aria-labelledby="rbwl">${CHANNELS.map(c=>`<button role="radio" data-rch="${c}" aria-checked="${ch===c}">${ic(chIcon(c))}${esc(chName(c))}</button>`).join('')}</div>
+    <label class="keep" style="margin-top:14px"><input type="checkbox" id="rbadd" checked><span>Le mettre aussi sur la liste de cette fois</span></label>
+    <div id="rbdup"></div>
+    <div class="foot" style="margin-top:16px"><button id="rbok" class="primary btn big">Enregistrer</button></div>`);
+  const s=$('#sheet'), sel=s.querySelector('#rbr');
+  sel.onchange=()=>{ s.querySelector('#rbnw').hidden=sel.value!==''; };
+  s.querySelectorAll('[data-rch]').forEach(b=>b.onclick=()=>{ ch=b.dataset.rch; s.querySelectorAll('[data-rch]').forEach(y=>y.setAttribute('aria-checked', y===b)); });
+  s.querySelector('#rbok').onclick=async()=>{
+    const label=cap(s.querySelector('#rbl').value.trim()), rub=(sel.value || cap(s.querySelector('#rbn').value.trim())).slice(0,60), pour=s.querySelector('#rbp').value.trim().slice(0,80)||null;
+    if(!label || !rub) return;
+    const ex=[...state.household, ...state.placard].find(h=>fold(h.label)===fold(label));
+    if(ex && rubOf(ex)){ s.querySelector('#rbdup').innerHTML=`<div class="dupw">${ic('alert','s')}<span><b>${esc(ex.label)}</b> est déjà dans la rubrique ${esc(rubOf(ex))}.</span></div>`; return; }
+    const {error} = ex ? await sb.from('household_items').update({rubrique:rub, pour}).eq('id',ex.id)
+      : await sb.from('household_items').upsert({label, category:guessCat(label), channel:ch, placard:null, active:true, rubrique:rub, pour},{onConflict:'label'});
+    if(error){ toast('Erreur : '+error.message); return; }
+    await loadStatic(); closeSheet();
+    const x=rubItems().find(h=>fold(h.label)===fold(label));
+    if(x && s.querySelector('#rbadd').checked) await oubliAnswer(x, 'ajout'); else { render(); toast(`${label} : gardé dans ${rub}`); }
+  };
+}
 function renderInventaire(){
   const P=state.placard, tb=P.filter(x=>stk(x)!=='ok').sort((a,b)=>(stk(a)==='fini'?0:1)-(stk(b)==='fini'?0:1) || a.label.localeCompare(b.label));
   const last=P.map(x=>x.stock_at).filter(Boolean).sort().pop(), stow=toStow();
@@ -1938,7 +2054,7 @@ function openMissSheet(m){
 function dueRecurring(){
   const t=todayIso(); let ign={}; try{ ign=JSON.parse(localStorage_get('ignore')||'{}'); }catch{}
   return [...state.household, ...state.placard.filter(x=>stk(x)==='ok')].filter(x=>x.frequency_weeks && x.last_bought
-    && addDays(x.last_bought, x.frequency_weeks*7)<=addDays(t,3) && !onList(x.label) && !(ign[x.label]>t)).slice(0,5);
+    && addDays(x.last_bought, x.frequency_weeks*7)<=addDays(t,3) && !onList(x.label) && !(ign[x.label]>t) && !rubOf(x)).slice(0,5);
 }
 function renderDue(){
   const xs=dueRecurring(); if(!xs.length) return '';
@@ -1985,6 +2101,7 @@ function renderDrive(){
   if(!all.length) return h+`<div class="empty">Rien à mettre au panier Drive cette semaine.</div></main>`;
   h+=`<div class="sub"><b style="color:var(--text)">${done.length}</b> sur ${all.length} articles faits</div><div class="prog"><i style="width:${Math.round(done.length/all.length*100)}%"></i></div>`;
   h+=`<p class="noted">« Chercher » ouvre la recherche sur votre drive. Ajoutez le produit au panier, revenez ici et touchez « Dans le panier ».</p>`;
+  const ob=oubliBanner(w); if(ob) h+=`<div class="tophb" style="margin-top:12px">${ob}</div>`;
   let cat=null;
   for(const it of todo){
     if(it.category!==cat){ cat=it.category; h+=`<h2 class="cat">${esc(own(CATS,cat||'autre')||'Autre')}</h2>`; }
@@ -2007,6 +2124,7 @@ function renderDrive(){
 }
 function bindDrive(){
   $('#drback').onclick=()=>{ state.drive=false; render(); window.scrollTo(0,0); };
+  const obb=$('#oublibanner'); if(obb) obb.onclick=openOubli;
   bindDriveUrl();
   const sd=$('#drshowdone'); if(sd) sd.onclick=()=>{ state.driveDone=!state.driveDone; render(); };
   document.querySelectorAll('[data-dcart]').forEach(b=>b.onclick=async()=>{
@@ -2547,6 +2665,7 @@ function bindMain(){
   const dg=$('#drivego'); if(dg) dg.onclick=()=>{ state.drive=true; render(); window.scrollTo(0,0); };
   const fz=$('#freezego'); if(fz) fz.onclick=freezeMenu;
   const vg=$('#verifgo'); if(vg) vg.onclick=()=>{ state.verifOpen=true; render(); window.scrollTo(0,0); };
+  for(const id of ['#oubligo','#oublibanner']){ const b=$(id); if(b) b.onclick=openOubli; }
   document.querySelectorAll('[data-ctab]').forEach(b=>b.onclick=()=>{ state.cTab=b.dataset.ctab; state.showOrder=false; render(); window.scrollTo(0,0); });
   const ot=$('#ordertoggle'); if(ot) ot.onclick=()=>{ state.showOrder=!state.showOrder; render(); };
   const na=$('#nextadd'); if(na) na.onclick=()=>openAddSheet('', {when:'next'});
