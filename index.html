@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-GS+1TPXo41HR75x+Fu2yU3Z2iOpv8ihXPBuPCRNfK9s='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-OSZ3ycw1CqlPwGfgNVqBq42r7FWnpN6F5i1PYSKHdmE='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -658,7 +658,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.23-1922';
+const APP_VERSION = '2026.10.23-2331';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1280,7 +1280,8 @@ function prepInfo(){
   const nOrd=xs.filter(i=>chOf(i)==='drive' && !stillToBuy(i)).length, shopName=`${chName('magasin')} et ${chName('boucher')}`;
   const steps=[
     {done:!!w, d:{t:'Menu validé', s:'Dans l\'onglet Semaine'}, c:c1, p:{t:'Faire le menu'}},
-    {done:!!w && (ordered || (vs.length ? frozen && !vLeft : xs.length>0)), d:vs.length?{t:'Menu figé, tour du placard fait', s:home?`${nb(home,'ingrédient','ingrédients')} déjà à la maison`:'Ce qui manquait est sur la liste'}:{t:'Liste de courses prête'}, c:c2, p:{t:'Figer le menu, tour du placard', s:'Ce qui manque à la maison arrive sur la liste'}},
+    // sans ingrédients du menu, la liste n'est pas prête même si « Rien oublié ? » ou la prochaine liste y ont mis des articles
+    {done:!!w && (ordered || (vs.length ? frozen && !vLeft : xs.some(i=>i.source==='menu'))), d:vs.length?{t:'Menu figé, tour du placard fait', s:home?`${nb(home,'ingrédient','ingrédients')} déjà à la maison`:'Ce qui manquait est sur la liste'}:{t:'Liste de courses prête'}, c:c2, p:{t:'Figer le menu, tour du placard', s:'Ce qui manque à la maison arrive sur la liste'}},
     {done:!!w && (ordered || oubliDone(w) || !oc.n), d:{t:'Rien oublié', s:oc.n?`${rn.length} rubriques passées`:''}, c:c3, p:{t:'Rien oublié ?', s:'Petit déjeuner, goûter, boissons, maison…'}},
     {done:ordered || (drive.length>0 && cart===drive.length), d:{t:'Panier Leclerc rempli', s:ordered?nb(nOrd,'article commandé','articles commandés'):nb(cart,'article au panier','articles au panier')},
       c:drive.length?{t:'Remplir le panier Leclerc', s:cart?`${cart} sur ${nb(drive.length,'article','articles')} au panier`:`${nb(drive.length,'article','articles')}, avec le produit conseillé`, bar:cart/drive.length, go:shown?['drivego',cart?'Continuer le panier':'Remplir le panier']:null, short:'panier à remplir'}
