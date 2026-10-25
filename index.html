@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-OSZ3ycw1CqlPwGfgNVqBq42r7FWnpN6F5i1PYSKHdmE='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-0KdaFDm4VkgNiJYi1KtCLlP+MGWL4nFeZ6s6sjlulJI='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -386,11 +386,13 @@ main.courses.nx .pbar .prog i{background:var(--next)}
 .dcard .dp b{color:var(--text);font-weight:600}
 .dcard .da{display:grid;grid-template-columns:1fr 1.35fr;gap:8px;margin-top:10px}
 .dcard .da .btn{min-height:46px;font-size:15px;padding:0 10px;white-space:nowrap}
-.dcard .dmiss{grid-column:1/-1;background:none;color:var(--muted);font-size:14px;min-height:40px;padding:4px}
+.dcard .dmore{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space-around}
+.dcard .dmiss{background:none;color:var(--muted);font-size:14px;min-height:40px;padding:4px 6px}
 .dcard.done{display:flex;align-items:center;gap:12px;padding:8px 8px 8px 14px;background:var(--surface);border-color:transparent}
 .dcard.done .dl{font-size:15px;font-weight:500;color:var(--text)}
 .dcard.done .st{font-size:13px;color:var(--muted);display:block;font-weight:400}
 .dcard.miss .st{color:var(--warn)}
+.dcard.skip s{color:var(--muted)}
 .dcard.done button{background:none;color:var(--accent);font-weight:600;font-size:14px;padding:6px 8px;flex:none}
 .dsetup{background:var(--surface);border-radius:16px;padding:16px;margin-top:8px}
 .dsetup h2{font-size:18px;margin:0 0 6px}
@@ -658,7 +660,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.23-2331';
+const APP_VERSION = '2026.10.25-1016';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -2070,7 +2072,9 @@ function bindDue(){
 // ---------- Mode Drive ----------
 // Solution de secours au pilotage de Chrome par Claude (bloqué par Leclerc le 2026-10-10) : Claude prépare la liste
 // (drive_product = produit conseillé, drive_query = mots à chercher), le foyer remplit le panier lui-même.
-// Chaque article : « Chercher » ouvre la recherche sur le drive, puis « Dans le panier » ou « Pas trouvé » (drive_cart).
+// Chaque article : « Chercher » ouvre la recherche sur le drive, puis « Dans le panier » ou « Pas trouvé » (drive_cart),
+// ou « Pas besoin » (status annule : l'article quitte la liste, sans partir sur la semaine prochaine),
+// ou « Pris autre chose » (label/qty changés, l'article prévu gardé dans drive_swap, voir swapOf).
 // « Commande validée » pose weeks.drive_ordered_at ; ce qui n'est pas au panier part sur la prochaine liste.
 // Adresse du drive : https, hôte leclercdrive.fr ou *.leclercdrive.fr (pas evil-leclercdrive.fr), chemin /magasin-…
 function driveBaseOf(url){
@@ -2088,10 +2092,16 @@ function driveStore(){
 }
 function driveSearch(it){ const q=(it.drive_query||it.drive_product||it.label).trim(); return driveBase()+'/recherche.aspx?TexteRecherche='+encodeURIComponent(q).replace(/%20/g,'+'); }
 function driveList(){ return state.items.filter(i=>i.channel==='drive' && i.status==='a_acheter'); }
+function driveSkipped(){ return state.items.filter(i=>i.channel==='drive' && i.status==='annule'); }
+// drive_swap : l'article prévu {label, qty, produit, query} quand le foyer a mis autre chose au panier
+// (« Bouillon de légumes » → « Bouillon de volaille ») ; unswap() donne de quoi le remettre.
+function swapOf(it){ const s=it.drive_swap; return s && typeof s==='object' && typeof s.label==='string' && s.label.trim() ? s : null; }
+function unswap(it){ const s=swapOf(it), str=v=>typeof v==='string'&&v.trim()?v:null;
+  return s ? {label:s.label, qty:str(s.qty), drive_product:str(s.produit), drive_query:str(s.query), drive_swap:null} : {}; }
 function catRank(it){ const i=CAT_ORDER.indexOf(it.category||'autre'); return i<0?99:i; }
 function renderDrive(){
   const w=curWeek(), all=driveList().sort((a,b)=>catRank(a)-catRank(b)||a.label.localeCompare(b.label));
-  const todo=all.filter(i=>!i.drive_cart), done=all.filter(i=>i.drive_cart);
+  const skip=driveSkipped(), todo=all.filter(i=>!i.drive_cart), done=[...all.filter(i=>i.drive_cart), ...skip];
   let h=`<header class="top"><div class="row"><button class="iconbtn" id="drback" aria-label="Retour aux courses">${ic('left','s')}</button><h1>Panier Leclerc</h1></div></header>`;
   if(w) h+=`<div class="subh"><span>Semaine du ${esc(rangeLabel(w))}${driveBase()?' · '+esc(driveStore()):''}</span></div>`;
   h+='<main>';
@@ -2099,8 +2109,9 @@ function renderDrive(){
     <ol><li>Ouvrez votre drive Leclerc dans le navigateur, connecté à votre compte.</li><li>Copiez l'adresse de la page (elle contient « leclercdrive.fr/magasin-… »).</li><li>Collez-la ici : c'est à faire une seule fois.</li></ol>
     <div class="row"><input id="drurl" class="grow" type="url" inputmode="url" placeholder="https://fd…-courses.leclercdrive.fr/magasin-…" autocomplete="off"><button class="addbtn" id="drsave" aria-label="Enregistrer l'adresse du drive">${ic('check')}</button></div></section></main>`;
   if(w && driveOrdered(w)) return h+`<div class="empty"><b>Commande drive passée</b><br>Ce que vous ajoutez au Drive va maintenant sur la liste de la semaine prochaine.</div></main>`;
-  if(!all.length) return h+`<div class="empty">Rien à mettre au panier Drive cette semaine.</div></main>`;
-  h+=`<div class="sub"><b style="color:var(--text)">${done.length}</b> sur ${all.length} articles faits</div><div class="prog"><i style="width:${Math.round(done.length/all.length*100)}%"></i></div>`;
+  if(!all.length && !skip.length) return h+`<div class="empty">Rien à mettre au panier Drive cette semaine.</div></main>`;
+  const tot=all.length+skip.length;
+  h+=`<div class="sub"><b style="color:var(--text)">${done.length}</b> sur ${tot} articles faits</div><div class="prog"><i style="width:${Math.round(done.length/tot*100)}%"></i></div>`;
   h+=`<p class="noted">« Chercher » ouvre la recherche sur votre drive. Ajoutez le produit au panier, revenez ici et touchez « Dans le panier ».</p>`;
   const ob=oubliBanner(w); if(ob) h+=`<div class="tophb" style="margin-top:12px">${ob}</div>`;
   let cat=null;
@@ -2112,12 +2123,16 @@ function renderDrive(){
       ${uses.length?`<div class="dp">Pour ${esc(uses.map(l=>whenShort(l.meal).toLowerCase()+' ('+shortTitle(l.meal.title)+')').join(', '))}</div>`:''}
       <div class="da">${extLink(driveSearch(it), 'btn outline dsearch', `Chercher${ic('ext','s')}`)}
       <button class="btn primary" data-dcart="${it.id}" data-v="mis">${ic('check','s')}Dans le panier</button>
-      <button class="dmiss" data-dcart="${it.id}" data-v="introuvable">Pas trouvé sur le drive</button></div></section>`;
+      <div class="dmore"><button class="dmiss" data-dcart="${it.id}" data-v="introuvable">Pas trouvé</button>
+      <button class="dmiss" data-dswap="${it.id}">Pris autre chose</button>
+      <button class="dmiss" data-dskip="${it.id}">Pas besoin</button></div></div></section>`;
   }
   if(!todo.length) h+=`<div class="empty" style="padding-top:28px"><b>Tout est traité !</b><br>Vérifiez le panier sur Leclerc, choisissez le créneau et validez la commande là-bas.</div>`;
   if(done.length){
     h+=`<button class="donebar" id="drshowdone" aria-expanded="${state.driveDone}"><span class="cb">${ic('check','xs')}</span><span class="grow">${done.length===1?'1 article fait':done.length+' articles faits'}</span>${ic(state.driveDone?'up':'down','s')}</button>`;
-    if(state.driveDone) h+=done.map(it=>`<div class="dcard done ${it.drive_cart==='introuvable'?'miss':''}"><span class="dl grow">${esc(it.label)}<span class="st">${it.drive_cart==='mis'?'Dans le panier':'Pas trouvé · ira sur la semaine prochaine'}${it.qty?' · '+esc(it.qty):''}</span></span>
+    if(state.driveDone) h+=done.map(it=>it.status==='annule'
+      ? `<div class="dcard done skip"><span class="dl grow"><s>${esc(it.label)}</s><span class="st">Pas besoin · retiré de la liste</span></span><button data-dskip="${it.id}" data-v="back">Annuler</button></div>`
+      : `<div class="dcard done ${it.drive_cart==='introuvable'?'miss':''}"><span class="dl grow">${esc(it.label)}<span class="st">${it.drive_cart==='mis'?(swapOf(it)?`Dans le panier, au lieu de ${esc(swapOf(it).label.toLowerCase())}`:'Dans le panier'):'Pas trouvé · ira sur la semaine prochaine'}${it.qty?' · '+esc(it.qty):''}</span></span>
       ${it.drive_cart==='introuvable'?`<button data-dgf="${it.id}">Chez ${esc(FOYER.magasin)}</button>`:''}<button data-dcart="${it.id}" data-v="">Annuler</button></div>`).join('');
   }
   h+=`<div class="dfoot"><button class="btn big ${todo.length?'outline':'primary'}" id="drorder" style="width:100%">J'ai validé la commande sur Leclerc</button></div>`;
@@ -2128,12 +2143,19 @@ function bindDrive(){
   const obb=$('#oublibanner'); if(obb) obb.onclick=openOubli;
   bindDriveUrl();
   const sd=$('#drshowdone'); if(sd) sd.onclick=()=>{ state.driveDone=!state.driveDone; render(); };
+  // Annuler (data-v vide) remet aussi l'article prévu s'il avait été remplacé.
   document.querySelectorAll('[data-dcart]').forEach(b=>b.onclick=async()=>{
     const it=state.items.find(i=>i.id===b.dataset.dcart); if(!it) return;
-    const prev=it.drive_cart, v=b.dataset.v||null; it.drive_cart=v; render();
-    const {error}=await sb.from('shopping_items').update({drive_cart:v}).eq('id',it.id);
-    if(error){ it.drive_cart=prev; toast('Erreur : '+error.message); render(); return; }
-    if(v==='mis') snack(`« ${it.label} » dans le panier`, 'Annuler', async()=>{ it.drive_cart=null; render(); await sb.from('shopping_items').update({drive_cart:null}).eq('id',it.id); }, 3500);
+    const v=b.dataset.v||null;
+    if(await drivePatch(it, v?{drive_cart:v}:{drive_cart:null, ...unswap(it)}) && v==='mis')
+      snack(`« ${it.label} » dans le panier`, 'Annuler', ()=>drivePatch(it,{drive_cart:null}), 3500);
+  });
+  document.querySelectorAll('[data-dswap]').forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.dswap); if(it) openDriveSwap(it); });
+  // « Pas besoin » : l'article quitte la liste (status annule) ; data-v="back" le remet au panier à faire.
+  document.querySelectorAll('[data-dskip]').forEach(b=>b.onclick=async()=>{
+    const it=state.items.find(i=>i.id===b.dataset.dskip); if(!it) return;
+    if(b.dataset.v==='back'){ await drivePatch(it,{status:'a_acheter'}); return; }
+    if(await drivePatch(it,{status:'annule'})) snack(`« ${it.label} » retiré de la liste`, 'Annuler', ()=>drivePatch(it,{status:'a_acheter'}), 3500);
   });
   document.querySelectorAll('[data-dgf]').forEach(b=>b.onclick=async()=>{
     const it=state.items.find(i=>i.id===b.dataset.dgf); if(!it) return;
@@ -2145,6 +2167,31 @@ function bindDrive(){
   });
   const od=$('#drorder'); if(od) od.onclick=openDriveOrder;
   if(sideBySide()) document.querySelectorAll('a.dsearch').forEach(a=>a.onclick=e=>{ if(openLeclercSide(a.href)) e.preventDefault(); });
+}
+// Change un article du panier : affiché tout de suite, remis comme avant si la base refuse.
+async function drivePatch(it, patch){
+  const prev=Object.fromEntries(Object.keys(patch).map(k=>[k,it[k]])); Object.assign(it,patch); render();
+  const {error}=await sb.from('shopping_items').update(patch).eq('id',it.id);
+  if(error){ Object.assign(it,prev); toast('Erreur : '+error.message); render(); return false; }
+  return true;
+}
+// « Pris autre chose » : ce qui est vraiment au panier remplace l'article prévu, gardé dans drive_swap pour Claude.
+function openDriveSwap(it){
+  openSheet(`<div class="grab"></div><div class="sheet-h"><div><h2 id="dst">Pris autre chose ?</h2><div class="sub">Au lieu de « ${esc(it.label)} »${it.qty?' · '+esc(it.qty):''}</div></div>${closeBtn}</div>
+    <label class="l" for="dsl" style="margin-top:0">Ce qui est dans le panier</label><input id="dsl" value="${esc(it.label)}" autocomplete="off">
+    <label class="l" for="dsq">Quantité</label><input id="dsq" value="${esc(it.qty||'')}" placeholder="optionnel" autocomplete="off">
+    <div class="foot" style="margin-top:16px"><button id="dsok" class="primary btn big">${ic('check','s')}C'est dans le panier</button></div>`);
+  const sh=$('#sheet'), el=sh.querySelector('#dsl');
+  const ok=async()=>{
+    const label=el.value.trim(), qty=sh.querySelector('#dsq').value.trim()||null, was=it.label; if(!label){ el.focus(); return; }
+    const same=label===it.label && qty===(it.qty||null);
+    const patch=same ? {drive_cart:'mis'} : {label, qty, drive_cart:'mis', drive_product:null, drive_query:null,
+      drive_swap:swapOf(it)||{label:it.label, qty:it.qty||null, produit:it.drive_product||null, query:it.drive_query||null}};
+    closeSheet();
+    if(await drivePatch(it,patch)) snack(same?`« ${label} » dans le panier`:`« ${label} » au lieu de « ${was} »`, 'Annuler', ()=>drivePatch(it,{drive_cart:null, ...unswap(it)}), 3500);
+  };
+  sh.querySelector('#dsok').onclick=ok;
+  sh.querySelectorAll('input').forEach(x=>x.onkeydown=e=>{ if(e.key==='Enter') ok(); });
 }
 // Sur ordinateur (souris, grand écran) : Leclerc s'ouvre dans une seule fenêtre, sur la moitié droite de l'écran,
 // réutilisée à chaque « Chercher » ; l'app installée se range sur la moitié gauche. Sur téléphone : un onglet, comme avant.
@@ -2198,9 +2245,10 @@ async function confirmDriveOrder(w, all, allIn, btns){
   if(rest.length){ const {error}=await sb.from('shopping_items').update({week_id:null, drive_cart:null}).in('id',rest.map(i=>i.id)); if(error){ toast('Erreur : '+error.message); btns().forEach(b=>b.disabled=false); return; } }
   const {error}=await sb.from('weeks').update({drive_ordered_at:now}).eq('id',w.id);
   if(error){ toast('Erreur : '+error.message); btns().forEach(b=>b.disabled=false); return; }
-  const row=i=>({label:i.label, qty:i.qty||null, produit:i.drive_product||null});
+  const row=i=>({label:i.label, qty:i.qty||null, produit:i.drive_product||null, ...(swapOf(i)?{au_lieu_de:swapOf(i).label}:{})});
   await sb.from('feedback_log').insert({week_id:w.id, kind:'panier_leclerc', content:{source:'app', par:state.session.user.email,
-    mis:mis.map(row), non_trouves:rest.filter(i=>i.drive_cart==='introuvable').map(row), reportes:rest.filter(i=>i.drive_cart!=='introuvable').map(row)}});
+    mis:mis.map(row), non_trouves:rest.filter(i=>i.drive_cart==='introuvable').map(row), reportes:rest.filter(i=>i.drive_cart!=='introuvable').map(row),
+    pas_besoin:driveSkipped().map(row)}});
   w.drive_ordered_at=now; closeSheet(); state.drive=false; await loadWeekData(); toast('Commande notée, merci !');
 }
 
