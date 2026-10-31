@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-0KdaFDm4VkgNiJYi1KtCLlP+MGWL4nFeZ6s6sjlulJI='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-9XxUGusi081XpF+tCpOR3E582dl4oeAGF0gpSbEFeyU='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -660,7 +660,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.25-1016';
+const APP_VERSION = '2026.10.31-1038';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -770,9 +770,19 @@ const state = {
 function localStorage_get(k){ try{ return localStorage.getItem('ar_'+k); }catch{ return null; } }
 function localStorage_set(k,v){ try{ localStorage.setItem('ar_'+k, v); }catch{} }
 // Au lancement : l'accueil (prochain repas), sauf si on vient de quitter l'app il y a moins de 30 min.
+// L'iPhone ferme souvent l'app écran éteint (en magasin, entre deux articles) : on note à chaque sortie
+// l'écran et le défilement, pour la rouvrir au même endroit.
+function savedUi(){ try{ const u=JSON.parse(localStorage_get('ui')||'null'); return u && Date.now()-Number(u.at||0) < 30*60*1000 ? u : null; }catch{ return null; } }
+function saveUi(){ if(state.member) localStorage_set('ui', JSON.stringify({tab:state.tab, cTab:state.cTab, drive:state.drive, y:Math.round(window.scrollY), at:Date.now()})); }
 function initialTab(){
-  const t=localStorage_get('tab'), at=Number(localStorage_get('tab_at')||0);
+  const u=savedUi(), t=u?u.tab:localStorage_get('tab'), at=u?u.at:Number(localStorage_get('tab_at')||0);
   return (['accueil','semaine','courses','inventaire'].includes(t) && Date.now()-at < 30*60*1000) ? t : 'accueil';
+}
+function restoreUi(){
+  const u=savedUi(); if(!u || u.tab!==state.tab) return;
+  if(['now','next'].includes(u.cTab)) state.cTab=u.cTab;
+  if(u.drive===true && state.tab==='courses') state.drive=true;
+  render(); const y=Number(u.y)||0; if(y>0) requestAnimationFrame(()=>window.scrollTo(0,y));
 }
 function setTab(t){ if(t!=='reglages') state.prevTab=t; if(t==='courses' && state.tab!=='courses') state.cTab=null; state.tab=t; state.findOpen=false; state.q=''; localStorage_set('tab',t); localStorage_set('tab_at',String(Date.now())); render(); window.scrollTo(0,0); }
 
@@ -3280,7 +3290,8 @@ async function boot(){
   const {data:{session}}=await sb.auth.getSession();
   await onSession(session);
   sb.auth.onAuthStateChange((_e,s)=>{ if((s&&!state.session)||(!s&&state.session)) onSession(s); });
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.session&&state.member) { loadStatic().then(loadWeeks).then(loadWeekData); loadProposal(); } });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveUi(); else if(state.session&&state.member) { loadStatic().then(loadWeeks).then(loadWeekData); loadProposal(); } });
+  window.addEventListener('pagehide', saveUi);
   // le « prochain repas » change avec l'heure : on rafraîchit l'accueil chaque minute
   setInterval(()=>{ if(state.tab==='accueil' && state.member && !state.wiz && !state.rev && !$('#sheet').classList.contains('on')) render(); }, 60000);
 }
@@ -3329,6 +3340,7 @@ async function onSession(session){
   if(location.hash==='#preparer'){ history.replaceState(null,'',location.pathname); openWizard(state.draft); }
   else if(location.hash==='#courses'){ history.replaceState(null,'',location.pathname); setTab('courses'); }
   else if(location.hash==='#menu'){ history.replaceState(null,'',location.pathname); if(state.proposal) openReview(); else toast('Pas de menu proposé pour l\'instant'); }
+  else restoreUi();
 }
 boot();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
