@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-C2vqoIl7BHMV05KNvf0eleuPw/SdNyQD6f5fZ6nKsLE='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-pWJPJQbyg1kGr4ihr0jwVjPYpoAA0U2UmmvkCod3xeQ='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -664,7 +664,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.31-1524';
+const APP_VERSION = '2026.10.31-1537';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -789,7 +789,15 @@ function applyY(){ if(restoreY) window.scrollTo(0,restoreY); }
 function replaceY(y){ restoreY=Math.max(0,Math.round(Number(y)||0)); applyY(); [100,300,700,1500].forEach(t=>setTimeout(applyY,t)); }
 ['touchstart','wheel'].forEach(e=>window.addEventListener(e,()=>{ restoreY=0; },{passive:true}));
 window.addEventListener('scroll',()=>{ if(!saveT && document.visibilityState==='visible') saveT=setTimeout(()=>{ saveT=0; if(document.visibilityState==='visible') saveUi(); },300); },{passive:true});
-function saveUi(){ if(state.member) localStorage_set('ui', JSON.stringify({tab:state.tab, cTab:state.cTab, drive:state.drive, y:restoreY||Math.round(window.scrollY), at:Date.now()})); }
+function saveUi(){ if(state.member) localStorage_set('ui', JSON.stringify({tab:state.tab, cTab:state.cTab, drive:state.drive, y:restoreY||Math.round(window.scrollY), ys:viewYs, at:Date.now()})); }
+// Hauteur de défilement de chaque écran (onglet, semaine de Courses, panier Drive) : on la retrouve en y revenant (30 min)
+let viewYs=bootUi?.ys && typeof bootUi.ys==='object' ? bootUi.ys : {};
+const viewKey=()=>state.drive ? 'drive' : state.tab==='courses' ? 'courses-'+state.cTab : state.tab;
+function leaveView(){ viewYs[viewKey()]={y:restoreY||Math.round(window.scrollY), at:Date.now()}; restoreY=0; }
+function toTop(){ restoreY=0; window.scrollTo(0,0); }
+function enterView(){ const v=viewYs[viewKey()], y=v && Date.now()-Number(v.at||0) < 30*60*1000 ? Number(v.y)||0 : 0; if(y>0) replaceY(y); else toTop(); }
+// retour sur Courses : la semaine qu'on y regardait, sinon le choix automatique
+function lastCTab(){ const a=Number(viewYs['courses-now']?.at)||0, b=Number(viewYs['courses-next']?.at)||0; return Date.now()-Math.max(a,b) < 30*60*1000 ? (b>a?'next':'now') : null; }
 // Retour à l'écran sans fermeture : si l'iPhone a remis en haut, on revient où l'on était en partant.
 function backToSaved(){ const u=savedUi(); if(u && state.member && u.tab===state.tab && !!u.drive===!!state.drive) replaceY(u.y); }
 function initialTab(){
@@ -797,7 +805,12 @@ function initialTab(){
   return (['accueil','semaine','courses','inventaire'].includes(t) && Date.now()-at < 30*60*1000) ? t : 'accueil';
 }
 function restoreUi(){ if(restoreY) replaceY(restoreY); }   // fin du démarrage : quelques essais de plus
-function setTab(t){ restoreY=0; if(t!=='reglages') state.prevTab=t; if(t==='courses' && state.tab!=='courses') state.cTab=null; state.tab=t; state.findOpen=false; state.q=''; localStorage_set('tab',t); localStorage_set('tab_at',String(Date.now())); render(); window.scrollTo(0,0); }
+// fresh : arrivée d'ailleurs (notification, fin d'un parcours), l'écran s'ouvre en haut ; même onglet touché : en haut aussi
+function setTab(t, fresh){
+  const top=fresh || t===state.tab; if(top) restoreY=0; else leaveView();
+  if(t!=='reglages') state.prevTab=t; if(t==='courses' && state.tab!=='courses') state.cTab=fresh ? null : lastCTab();
+  state.tab=t; state.findOpen=false; state.q=''; localStorage_set('tab',t); localStorage_set('tab_at',String(Date.now())); render(); top ? toTop() : enterView();
+}
 
 const $ = (s)=>document.querySelector(s);
 const esc = (s)=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1228,7 +1241,7 @@ function renderCourses(){
     </div><main class="courses${tab==='next'?' nx':''}">`;
   if(findOn) h+=`<div class="find" role="search">${ic('search','s')}<input id="find" type="search" value="${esc(state.q)}" placeholder="Chercher dans cette liste…" aria-label="Chercher dans cette liste" autocomplete="off" enterkeyhint="search">${state.q?`<button class="clr" id="findclr" aria-label="Effacer la recherche">${ic('x','s')}</button>`:''}</div>`;
   const cw=courseWeek();
-  if(cw && cw.id!==curWeek()?.id){ syncCourseWeek(cw); return h+`<div class="empty">Chargement…</div></main>`+addBar(); }
+  if(cw && cw.id!==curWeek()?.id){ const ok=memWeek(cw); syncCourseWeek(cw); if(!ok) return h+`<div class="empty">Chargement…</div></main>`+addBar(); }
   if(state.q.trim()) return h+renderFound(state.items.filter(i=>i.status!=='annule'))+'</main>'+addBar();
   return h+(tab==='now' ? renderNow(lw) : renderNextTab(info))+'</main>'+addBar();
 }
@@ -1793,7 +1806,7 @@ async function freezeMenu(){
   const ctx=Object.assign({}, w.context||{}, {menu_fige_le:new Date().toISOString(), menu_fige_par:state.session.user.email});
   const {error}=await sb.from('weeks').update({context:ctx}).eq('id',w.id);
   if(error){ toast('Erreur : '+error.message); return; }
-  w.context=ctx; state.verifOpen=true; render(); window.scrollTo(0,0);
+  w.context=ctx; leaveView(); state.verifOpen=true; render(); toTop();
 }
 function verifMeals(it){ return (it.for_meals||[]).map(l=>state.verifMeals.find(m=>m.id===l.meal_id)).filter(Boolean).sort(mealSort); }
 function verifRow(it){
@@ -1844,11 +1857,11 @@ async function syncPlacard(it, v){
   if(error) toast('Inventaire pas mis à jour : '+error.message);
 }
 function bindVerif(){
-  $('#vback').onclick=()=>{ state.verifOpen=false; render(); window.scrollTo(0,0); };
+  $('#vback').onclick=()=>{ state.verifOpen=false; render(); enterView(); };
   document.querySelectorAll('[data-vf]').forEach(b=>b.onclick=()=>{ const it=state.verif.find(i=>i.id===b.dataset.vf); if(it) setVerif(it, b.dataset.v); });
   const d=$('#vdone'); if(d) d.onclick=async()=>{
     const w=verifWeek(), i=w?state.weeks.findIndex(x=>x.id===w.id):-1; if(i>=0) state.weekIdx=i;
-    state.verifOpen=false; state.tab='courses'; state.cTab=w && w.id===nextWeek()?.id ? 'next' : 'now'; state.filter='drive'; localStorage_set('filter','drive'); await loadWeekData(); setTab('courses');
+    state.verifOpen=false; state.tab='courses'; state.cTab=w && w.id===nextWeek()?.id ? 'next' : 'now'; state.filter='drive'; localStorage_set('filter','drive'); await loadWeekData(); setTab('courses', true);
   };
 }
 
@@ -1869,7 +1882,7 @@ const oubliVus = (w)=>w?.context?.oubli_vus || [];
 function onWeek(label, w){ const l=fold(label); return w ? state.wkItems.find(i=>i.week_id===w.id && ['a_acheter','achete'].includes(i.status) && fold(i.label)===l) || null : null; }
 const oubliSeen = (x, w)=>!!onWeek(x.label, w) || oubliVus(w).includes(x.label);
 function oubliCount(w){ const xs=rubItems(); return {n:xs.length, seen:xs.filter(x=>oubliSeen(x,w)).length}; }
-const openOubli = ()=>{ state.oubliOpen=true; render(); window.scrollTo(0,0); };
+const openOubli = ()=>{ leaveView(); state.oubliOpen=true; render(); toTop(); };
 function oubliBanner(w){
   if(!w || w.id!==oubliWeek()?.id || oubliDone(w) || driveOrdered(w) || !rubItems().length) return '';
   return `<button class="banner" id="oublibanner">${ic('note')}<span><b>Rien oublié ?</b>${esc(cap(rubNames().slice(0,3).join(', ').toLowerCase()))}… : un tour rapide avant de remplir le panier.</span></button>`;
@@ -1912,13 +1925,13 @@ async function oubliAnswer(x, v){
   const vs=oubliVus(w); if(await saveWeekCtx(w, {oubli_vus: vs.includes(x.label) ? vs.filter(l=>l!==x.label) : [...vs, x.label]})) render();
 }
 function bindOubli(){
-  $('#oback').onclick=()=>{ state.oubliOpen=false; render(); window.scrollTo(0,0); };
+  $('#oback').onclick=()=>{ state.oubliOpen=false; render(); enterView(); };
   document.querySelectorAll('[data-ob]').forEach(b=>b.onclick=()=>{ const x=rubItems().find(i=>i.id===b.dataset.ob); if(x) oubliAnswer(x, b.dataset.v); });
   const nw=$('#obnew'); if(nw) nw.onclick=()=>openRubSheet();
   const d=$('#obdone'); if(d) d.onclick=async()=>{
     const w=oubliWeek(); if(!w) return;
     if(!await saveWeekCtx(w, {oubli_fait_le:new Date().toISOString(), oubli_fait_par:state.session.user.email})) return;
-    state.oubliOpen=false; render(); window.scrollTo(0,0); toast('Rien oublié : place au panier Leclerc');
+    state.oubliOpen=false; render(); enterView(); toast('Rien oublié : place au panier Leclerc');
   };
 }
 // Un nouvel article dans une rubrique (ou une nouvelle rubrique) : gardé pour les prochaines fois, et sur la liste si coché
@@ -2169,7 +2182,7 @@ function renderDrive(){
   return h+'</main>';
 }
 function bindDrive(){
-  $('#drback').onclick=()=>{ state.drive=false; render(); window.scrollTo(0,0); };
+  $('#drback').onclick=()=>{ state.drive=false; render(); enterView(); };
   const obb=$('#oublibanner'); if(obb) obb.onclick=openOubli;
   bindDriveUrl();
   const sd=$('#drshowdone'); if(sd) sd.onclick=()=>{ state.driveDone=!state.driveDone; render(); };
@@ -2741,11 +2754,11 @@ function bindMain(){
   document.querySelectorAll('[data-unprep]').forEach(b=>b.onclick=()=>unprepare(b.dataset.unprep));
   document.querySelectorAll('[data-swap]').forEach(b=>b.onclick=()=>openSwap(b.dataset.swap));
   document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=()=>rateMeal(b.dataset.id, b.dataset.rate));
-  const dg=$('#drivego'); if(dg) dg.onclick=()=>{ state.drive=true; render(); window.scrollTo(0,0); };
+  const dg=$('#drivego'); if(dg) dg.onclick=()=>{ leaveView(); state.drive=true; render(); toTop(); };
   const fz=$('#freezego'); if(fz) fz.onclick=freezeMenu;
-  const vg=$('#verifgo'); if(vg) vg.onclick=()=>{ state.verifOpen=true; render(); window.scrollTo(0,0); };
+  const vg=$('#verifgo'); if(vg) vg.onclick=()=>{ leaveView(); state.verifOpen=true; render(); toTop(); };
   for(const id of ['#oubligo','#oublibanner']){ const b=$(id); if(b) b.onclick=openOubli; }
-  document.querySelectorAll('[data-ctab]').forEach(b=>b.onclick=()=>{ state.cTab=b.dataset.ctab; state.showOrder=false; render(); window.scrollTo(0,0); });
+  document.querySelectorAll('[data-ctab]').forEach(b=>b.onclick=()=>{ const same=b.dataset.ctab===state.cTab; if(!same) leaveView(); state.cTab=b.dataset.ctab; state.showOrder=false; render(); same ? toTop() : enterView(); });
   const ot=$('#ordertoggle'); if(ot) ot.onclick=()=>{ state.showOrder=!state.showOrder; render(); };
   const na=$('#nextadd'); if(na) na.onclick=()=>openAddSheet('', {when:'next'});
   const ao=$('#addopen'); if(ao) ao.onclick=()=>openAddSheet(undefined, {when:courseTab()});
@@ -3239,7 +3252,7 @@ async function validateMenu(){
   if(r.error){ toast('Erreur : '+r.error.message); render(); return; }
   p.status='validee'; state.rev=null; if(second) notifyValidation(p);
   await loadWeeks(); const i=state.weeks.findIndex(x=>x.id===w.id); if(i>=0) state.weekIdx=i;
-  await loadWeekData(); setTab('semaine'); toast('Menu validé : il est dans la Semaine');
+  await loadWeekData(); setTab('semaine', true); toast('Menu validé : il est dans la Semaine');
 }
 
 // ---------- Données ----------
@@ -3299,7 +3312,16 @@ async function loadWeekData(){
   const [r, rv, rw]=await Promise.all([Promise.all(q), Promise.all(qv), Promise.all(qw)]);
   if(!netCheck([...r, ...rv, ...rw])) return;
   const d=weekKey(); d.r=r.map(x=>x.data); d.rv=rv.map(x=>x.data); d.rw=rw.map(x=>x.data);
-  raw.wk=d; applyWeekData(d); cacheSave(); render();
+  raw.wk=d; applyWeekData(d);
+  if(d.w) raw.wks={...Object.fromEntries(Object.entries(raw.wks||{}).filter(([id])=>id!==d.w).slice(-3)), [d.w]:[d.r[4], d.r[5]]};
+  cacheSave(); render();
+}
+// Une autre semaine déjà chargée (onglet Semaine prochaine…) : ses repas et ses articles gardés, le reste à jour,
+// affichés tout de suite le temps de la recharger
+function memWeek(w){
+  const i=state.weeks.findIndex(x=>x.id===w.id), m=raw.wks?.[w.id], d=raw.wk; if(i<0 || !m || !d) return false;
+  const k=weekKey(); if(d.vw!==k.vw || JSON.stringify(d.ids)!==JSON.stringify(k.ids)) return false;
+  state.weekIdx=i; raw.wk={...d, w:w.id, r:[...(d.r||[]).slice(0,4), ...m]}; applyWeekData(raw.wk); return true;
 }
 // Les semaines dont dépendent les données ci-dessus : des données gardées ne servent que si elles concordent encore
 function weekKey(){ return {w:curWeek()?.id||null, vw:verifWeek()?.id||null, ids:[liveWeek(), nextWeek()].filter(Boolean).map(x=>x.id)}; }
@@ -3336,7 +3358,7 @@ function cacheLoad(email){
 }
 function cacheClear(){ raw={}; state.cacheAt=0; try{ localStorage.removeItem('ar_cache'); }catch{} }
 function hydrate(c){
-  raw={member:c.member, static:c.static, weeks:c.weeks, wk:c.wk, prop:c.prop}; state.cacheAt=Number(c.at)||0;
+  raw={member:c.member, static:c.static, weeks:c.weeks, wk:c.wk, wks:c.wks, prop:c.prop}; state.cacheAt=Number(c.at)||0;
   state.member=copy(c.member);
   if(c.static) applyStatic(c.static);
   if(c.weeks) applyWeeks(c.weeks);
@@ -3345,6 +3367,7 @@ function hydrate(c){
   if(i>=0) state.weekIdx=i;
   const k=weekKey();   // une nouvelle semaine a pu commencer depuis : alors on attend le réseau
   if(c.wk && c.wk.w===k.w && c.wk.vw===k.vw && JSON.stringify(c.wk.ids)===JSON.stringify(k.ids)) applyWeekData(c.wk);
+  else if(curWeek()) memWeek(curWeek());
   if(c.prop){ let p=cleanProposal(c.prop.p||null); const w=cleanWeek(c.prop.w||null); if(!w || addDays(w.week_start,6)<todayIso()) p=null; state.proposal=p; state.propWeek=p?w:null; }
 }
 // Réseau : une réponse en erreur ne remplace jamais ce qui est affiché
@@ -3435,7 +3458,7 @@ async function onSession(session){
   await Promise.all([loadStatic(), loadWeeks(), loadProposal()]);
   await loadWeekData(); subscribe(); checkPush().then(()=>{ if(state.tab==='reglages') render(); }).catch(()=>{});
   if(location.hash==='#preparer'){ history.replaceState(null,'',location.pathname); openWizard(state.draft); }
-  else if(location.hash==='#courses'){ history.replaceState(null,'',location.pathname); setTab('courses'); }
+  else if(location.hash==='#courses'){ history.replaceState(null,'',location.pathname); setTab('courses', true); }
   else if(location.hash==='#menu'){ history.replaceState(null,'',location.pathname); if(state.proposal) openReview(); else toast('Pas de menu proposé pour l\'instant'); }
   else restoreUi();
 }
