@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-+zecFZfOnXNqRdK+T0W7Gcr7zUhW6Kpig8DfhU56baw='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-Pv3gYltZ7qD7rXbrdSAZyR8tjjLahCvBLj6NsyJfyw4='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -76,6 +76,8 @@ label.l{display:block;font-size:14px;color:var(--muted);margin:12px 0 6px}
 .center{text-align:center}
 .hidden{display:none !important}
 .empty{color:var(--muted);text-align:center;padding:48px 10px 8px;line-height:1.5}
+.offline{display:flex;align-items:center;gap:8px;width:calc(100% - 40px);max-width:600px;margin:0 auto 8px;padding:8px 12px;border-radius:12px;background:var(--page);color:var(--muted);font-size:13px;line-height:1.35}
+html.grey .offline{background:var(--card)}
 .empty b{color:var(--text);font-size:17px}
 .err{color:var(--danger);font-size:14px;margin-top:8px}
 .card{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px}
@@ -660,7 +662,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.31-1320';
+const APP_VERSION = '2026.10.31-1332';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -768,7 +770,7 @@ const state = {
   email: localStorage_get('email') || '', err:'', busy:false,
   draft:null, wiz:null, drive: bootUi?.tab==='courses' && bootUi.drive===true, settings:{}, driveDone:false,
   proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[],
-  verif:[], verifMeals:[], verifOpen:false, oubliOpen:false
+  verif:[], verifMeals:[], verifOpen:false, oubliOpen:false, offline:false, cacheAt:0
 };
 function localStorage_get(k){ try{ return localStorage.getItem('ar_'+k); }catch{ return null; } }
 function localStorage_set(k,v){ try{ localStorage.setItem('ar_'+k, v); }catch{} }
@@ -891,7 +893,11 @@ function snack(msg, action, fn, ms=6000){
   s.classList.add('on'); clearTimeout(s._h); s._h=setTimeout(hideSnack, ms);
 }
 function hideSnack(){ $('#snack').classList.remove('on'); }
-function toast(msg){ snack(msg, null, null, 2200); }
+function toast(msg){
+  // écriture ratée faute de réseau : on réaffiche le dernier état reçu de la base (le changement n'y est pas)
+  if(/^Erreur : /.test(msg) && /fetch|load failed|network/i.test(msg)){ msg='Pas de réseau : ce changement n\'est pas enregistré, réessaie dans un instant'; netFail(); if(raw.wk){ applyWeekData(raw.wk); render(); } }
+  snack(msg, null, null, 2200);
+}
 function fmtDate(iso){ const d=new Date(iso+'T00:00:00'); return d.getDate()+' '+MONTHS[d.getMonth()]; }
 function toIso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function addDays(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return toIso(d); }
@@ -1009,7 +1015,8 @@ function render(){
   else if(state.drive){ app.innerHTML=renderDrive(); bindDrive(); }
   else {
     const t=state.tab;
-    const body = t==='semaine'?renderSemaine(): t==='courses'?renderCourses(): t==='inventaire'?renderInventaire(): t==='reglages'?renderReglages(): renderHome();
+    let body = t==='semaine'?renderSemaine(): t==='courses'?renderCourses(): t==='inventaire'?renderInventaire(): t==='reglages'?renderReglages(): renderHome();
+    const ob=offlineBanner(); if(ob) body = body.includes('</header>') ? body.replace('</header>', '</header>'+ob) : ob+body;
     nav = t!=='reglages';
     app.innerHTML = body + (nav ? `<nav class="tabs" aria-label="Navigation principale">
       ${tabBtn('accueil','cloche','Prochain repas')}${tabBtn('semaine','cal','Semaine')}${tabBtn('courses','bag','Courses', coursesLeft())}${tabBtn('inventaire','jar','Inventaire', toStow().length)}
@@ -3039,10 +3046,12 @@ function propBanner(){
   return '';
 }
 async function loadProposal(){
-  const {data}=await sb.from('menu_proposals').select('*').in('status',['proposee','remarques','validee']).gte('created_at',addDays(todayIso(),-21)).order('created_at',{ascending:false}).limit(5);
-  const rows=(data||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
-  let p=cleanProposal(rows[0]||null), w=null;
-  if(p){ const r=await sb.from('weeks').select('*').eq('id',p.week_id).maybeSingle(); w=cleanWeek(r.data||null); if(!w || addDays(w.week_start,6)<todayIso()) p=null; }
+  const res=await sb.from('menu_proposals').select('*').in('status',['proposee','remarques','validee']).gte('created_at',addDays(todayIso(),-21)).order('created_at',{ascending:false}).limit(5);
+  if(!netCheck([res])) return;
+  const rows=(res.data||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+  let p=cleanProposal(rows[0]||null), w=null, rawW=null;
+  if(p){ const r=await sb.from('weeks').select('*').eq('id',p.week_id).maybeSingle(); if(!netCheck([r])) return; rawW=r.data||null; w=cleanWeek(rawW); if(!w || addDays(w.week_start,6)<todayIso()) p=null; }
+  raw.prop={p:rows[0]||null, w:rawW}; cacheSave();
   if(p && state.proposal && p.id===state.proposal.id && revSaveT) p.review=state.proposal.review;
   else if(p && w) await carryOver(p,w);   // une saisie est en cours : on garde la version locale
   const prevId=state.proposal?.id, prevStatus=state.proposal?.status;
@@ -3233,20 +3242,30 @@ async function validateMenu(){
 
 // ---------- Données ----------
 async function loadStatic(){
-  const [{data:members},{data:household},{data:settings}] = await Promise.all([
+  const res = await Promise.all([
     sb.from('members').select('*').order('added_at'),
     sb.from('household_items').select('*').eq('active',true).order('label'),
     sb.from('foyer_settings').select('key,value')
   ]);
+  if(!netCheck(res)) return;
+  raw.static={members:res[0].data, household:res[1].data, settings:res[2].data}; applyStatic(raw.static); cacheSave();
+}
+function applyStatic(st){
+  const {members, household, settings}=copy(st)||{};
   state.settings=Object.fromEntries((settings||[]).map(r=>[r.key,r.value]));
   setFoyer(state.settings.foyer);   // le profil du foyer (prénoms, planning type), lisible seulement par les membres
   state.members=members||[]; state.household=(household||[]).filter(x=>!x.placard); state.placard=(household||[]).filter(x=>x.placard);
 }
 async function loadWeeks(){
-  const [{data},{data:drafts}]=await Promise.all([
+  const res=await Promise.all([
     sb.from('weeks').select('*').neq('status','brouillon').order('week_start',{ascending:false}).limit(12),
     sb.from('weeks').select('*').eq('status','brouillon').gte('week_start',addDays(todayIso(),-6)).order('week_start',{ascending:false}).limit(1)
   ]);
+  if(!netCheck(res)) return;
+  raw.weeks={data:res[0].data, drafts:res[1].data}; applyWeeks(raw.weeks); cacheSave();
+}
+function applyWeeks(wk){
+  const {data, drafts}=copy(wk)||{};
   const keep=state.drive ? curWeek()?.id : null;   // panier Drive ouvert : il reste sur sa semaine (retour depuis Leclerc)
   state.weeks=(data||[]).map(cleanWeek).sort((a,b)=>b.week_start.localeCompare(a.week_start)); state.draft=cleanWeek((drafts&&drafts[0])||null);
   const ki=keep ? state.weeks.findIndex(w=>w.id===keep) : -1;
@@ -3273,19 +3292,67 @@ async function loadWeekData(){
   // écran Courses : les articles de cette semaine et de la suivante (compteurs des onglets, étapes de préparation)
   const ids=[liveWeek(), nextWeek()].filter(Boolean).map(x=>x.id), qw=ids.length?[sb.from('shopping_items').select('*').in('week_id',ids)]:[];
   const [r, rv, rw]=await Promise.all([Promise.all(q), Promise.all(qv), Promise.all(qw)]);
-  state.wkItems=ids.length?(rw[0].data||[]):[]; state.wkLoaded=true;
-  state.backlog=r[0].data||[]; state.near=(r[1].data||[]).map(cleanMeal); state.dishes=r[2].data||[];
-  state.feedback=(r[3].data||[]).filter(f=>f.content?.type==='avis_repas');
-  state.meals=w?(r[4].data||[]).map(cleanMeal):[]; state.items=w?(r[5].data||[]).filter(i=>!isVerif(i)):[];
-  state.verif=vw?(rv[0].data||[]).filter(i=>isVerif(i) || i.verif):[]; state.verifMeals=vw?(rv[1].data||[]).map(cleanMeal):[];
+  if(!netCheck([...r, ...rv, ...rw])) return;
+  const d=weekKey(); d.r=r.map(x=>x.data); d.rv=rv.map(x=>x.data); d.rw=rw.map(x=>x.data);
+  raw.wk=d; applyWeekData(d); cacheSave(); render();
+}
+// Les semaines dont dépendent les données ci-dessus : des données gardées ne servent que si elles concordent encore
+function weekKey(){ return {w:curWeek()?.id||null, vw:verifWeek()?.id||null, ids:[liveWeek(), nextWeek()].filter(Boolean).map(x=>x.id)}; }
+// Toujours sur une copie : l'app modifie ses lignes sur place (cocher…), la réponse gardée doit rester celle de la base
+const copy=(x)=>JSON.parse(JSON.stringify(x??null));
+function applyWeekData(d){
+  d=copy(d); const a=(x)=>Array.isArray(x)?x:[], r=d.r||[], rv=d.rv||[], rw=d.rw||[];
+  state.wkItems=d.ids.length?a(rw[0]):[]; state.wkLoaded=true;
+  state.backlog=a(r[0]); state.near=a(r[1]).map(cleanMeal); state.dishes=a(r[2]);
+  state.feedback=a(r[3]).filter(f=>f.content?.type==='avis_repas');
+  state.meals=d.w?a(r[4]).map(cleanMeal):[]; state.items=d.w?a(r[5]).filter(i=>!isVerif(i)):[];
+  state.verif=d.vw?a(rv[0]).filter(i=>isVerif(i) || i.verif):[]; state.verifMeals=d.vw?a(rv[1]).map(cleanMeal):[];
   if(state.verifOpen && !state.verif.length) state.verifOpen=false;
-  render();
 }
 async function checkMember(){
   // égalité exacte : members.email est en minuscules (contrainte members_email_minuscules, migration 0015)
   const {data,error}=await sb.from('members').select('*').eq('email',String(state.session.user.email||'').toLowerCase()).maybeSingle();
+  if(error && state.member){ netFail(); return; }   // pas de réseau : on reste sur le foyer gardé sur le téléphone
   state.member = (!error && data) ? data : false;
+  if(state.member){ raw.member=copy(data); cacheSave(); }
 }
+// ---------- Données gardées sur le téléphone ----------
+// Les dernières réponses de la base (brutes, nettoyées à l'identique au chargement) : l'app s'ouvre tout de suite
+// dessus puis se met à jour ; sans réseau, elle reste dessus au lieu de se vider. Effacées à la déconnexion.
+const CACHE_MAX=7*24*3600*1000;
+let raw={};
+function cacheSave(){
+  const email=state.session?.user?.email; if(!email || state.session.pseudo || !raw.member) return;
+  state.cacheAt=Date.now(); localStorage_set('cache', JSON.stringify({v:1, email:email.toLowerCase(), at:state.cacheAt, ...raw}));
+}
+function cacheLoad(email){
+  try{ const c=JSON.parse(localStorage_get('cache')||'null');
+    return c && c.v===1 && c.member && (!email || c.email===String(email).toLowerCase()) && Date.now()-Number(c.at||0) < CACHE_MAX ? c : null; }catch{ return null; }
+}
+function cacheClear(){ raw={}; state.cacheAt=0; try{ localStorage.removeItem('ar_cache'); }catch{} }
+function hydrate(c){
+  raw={member:c.member, static:c.static, weeks:c.weeks, wk:c.wk, prop:c.prop}; state.cacheAt=Number(c.at)||0;
+  state.member=copy(c.member);
+  if(c.static) applyStatic(c.static);
+  if(c.weeks) applyWeeks(c.weeks);
+  const k=weekKey();   // une nouvelle semaine a pu commencer depuis : alors on attend le réseau
+  if(c.wk && c.wk.w===k.w && c.wk.vw===k.vw && JSON.stringify(c.wk.ids)===JSON.stringify(k.ids)) applyWeekData(c.wk);
+  if(c.prop){ let p=cleanProposal(c.prop.p||null); const w=cleanWeek(c.prop.w||null); if(!w || addDays(w.week_start,6)<todayIso()) p=null; state.proposal=p; state.propWeek=p?w:null; }
+}
+// Réseau : une réponse en erreur ne remplace jamais ce qui est affiché
+function netCheck(res){ if(res.some(x=>x && x.error)){ netFail(); return false; } if(state.offline){ state.offline=false; render(); } return true; }
+function netFail(){ if(!state.offline){ state.offline=true; render(); } }
+function offlineBanner(){
+  if(!state.offline || !state.cacheAt) return '';
+  const d=new Date(state.cacheAt), h=d.getHours()+' h '+String(d.getMinutes()).padStart(2,'0');
+  return `<p class="offline" role="status">${ic('cloud','s')}<span>Pas de réseau : dernière mise à jour ${toIso(d)===todayIso()?'':'le '+fmtDate(toIso(d))+' '}à ${h}</span></p>`;
+}
+// Retour du réseau : session à renouveler (ouverte hors ligne) ou données à recharger
+async function retryNet(){
+  if(state.session?.pseudo){ const {data:{session}}=await sb.auth.getSession(); if(session) onSession(session); }
+  else if(state.session && state.member) refreshAll();
+}
+function refreshAll(){ loadStatic().then(loadWeeks).then(loadWeekData).then(applyY); loadProposal(); }
 let channel=null;
 function subscribe(){
   if(channel) return;
@@ -3298,10 +3365,17 @@ function subscribe(){
     .subscribe();
 }
 async function boot(){
-  const {data:{session}}=await sb.auth.getSession();
-  await onSession(session);
-  sb.auth.onAuthStateChange((_e,s)=>{ if((s&&!state.session)||(!s&&state.session)) onSession(s); });
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveUi(); else { backToSaved(); if(state.session&&state.member) { loadStatic().then(loadWeeks).then(loadWeekData).then(applyY); loadProposal(); } } });
+  // affichage immédiat du foyer gardé sur le téléphone : sans réseau, la session peut mettre ~30 s à répondre
+  const c0=cacheLoad(null); if(c0){ state.session={user:{email:c0.email}, pseudo:true}; hydrate(c0); render(); }
+  const {data:{session}, error}=await sb.auth.getSession();
+  // ouverte sans réseau après l'expiration du jeton (1 h) : la session ne peut pas être renouvelée tout de suite,
+  // on affiche le foyer gardé sur le téléphone en attendant le réseau
+  const c=!session && error && (error.name==='AuthRetryableFetchError' || !navigator.onLine) ? cacheLoad(null) : null;
+  await (c ? onSession({user:{email:c.email}, pseudo:true}) : onSession(session));
+  // ouverte hors ligne (session provisoire) : seule une vraie déconnexion la ferme, pas l'annonce « pas encore de session »
+  sb.auth.onAuthStateChange((e,s)=>{ if((s&&(!state.session||state.session.pseudo))||(!s&&state.session&&(!state.session.pseudo||e==='SIGNED_OUT'))) onSession(s); });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveUi(); else { backToSaved(); retryNet(); } });
+  window.addEventListener('online', retryNet); window.addEventListener('offline', netFail);
   window.addEventListener('pagehide', saveUi); window.addEventListener('pageshow', e=>{ if(e.persisted) backToSaved(); });
   // le « prochain repas » change avec l'heure : on rafraîchit l'accueil chaque minute
   setInterval(()=>{ if(state.tab==='accueil' && state.member && !state.wiz && !state.rev && !$('#sheet').classList.contains('on')) render(); }, 60000);
@@ -3343,9 +3417,13 @@ async function pushOff(silent){
 }
 
 async function onSession(session){
-  state.session=session; state.member=null; render();
-  if(!session){ setFoyer(null); if(channel){ sb.removeChannel(channel); channel=null; } return; }
-  await checkMember(); if(state.member===false){ render(); return; }
+  state.session=session; state.member=null; state.offline=false;
+  if(!session){ cacheClear(); state.wkLoaded=false; render(); setFoyer(null); if(channel){ sb.removeChannel(channel); channel=null; } return; }
+  const c=cacheLoad(session.user.email); if(c) hydrate(c);
+  if(session.pseudo){ state.offline=true; render(); restoreUi(); return; }
+  if(c && !navigator.onLine) state.offline=true;   // le téléphone se sait hors ligne : bandeau tout de suite
+  render();
+  await checkMember(); if(state.member===false){ cacheClear(); render(); return; }
   await Promise.all([loadStatic(), loadWeeks(), loadProposal()]);
   await loadWeekData(); subscribe(); checkPush().then(()=>{ if(state.tab==='reglages') render(); }).catch(()=>{});
   if(location.hash==='#preparer'){ history.replaceState(null,'',location.pathname); openWizard(state.draft); }
