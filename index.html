@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EBLSZpb55Xz9K3IvX+hSIifMgmgK+lxhYxpjgfN+084='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-C2vqoIl7BHMV05KNvf0eleuPw/SdNyQD6f5fZ6nKsLE='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -664,7 +664,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.31-1412';
+const APP_VERSION = '2026.10.31-1524';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -772,7 +772,7 @@ const state = {
   email: localStorage_get('email') || '', err:'', busy:false,
   draft:null, wiz:null, drive: bootUi?.tab==='courses' && bootUi.drive===true, settings:{}, driveDone:false,
   proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[],
-  verif:[], verifMeals:[], verifOpen:false, oubliOpen:false, offline:false, cacheAt:0
+  verif:[], verifMeals:[], verifOpen:false, oubliOpen:false, offline:false, cacheAt:0, itemsWk:null
 };
 function localStorage_get(k){ try{ return localStorage.getItem('ar_'+k); }catch{ return null; } }
 function localStorage_set(k,v){ try{ localStorage.setItem('ar_'+k, v); }catch{} }
@@ -1198,7 +1198,7 @@ function curChannel(){ return CHANNELS.includes(state.filter) ? state.filter : '
 function nextWeek(){ const d=nextMondayAfterToday(); return state.weeks.find(w=>w.week_start===d) || null; }
 function itemsOf(w){
   if(!w) return [];
-  return (w.id===curWeek()?.id ? state.items : state.wkItems.filter(i=>i.week_id===w.id && !isVerif(i))).filter(i=>i.status!=='annule');
+  return (w.id===state.itemsWk ? state.items : state.wkItems.filter(i=>i.week_id===w.id && !isVerif(i))).filter(i=>i.status!=='annule');
 }
 const verifOfWeek=(w)=>w ? state.wkItems.filter(i=>i.week_id===w.id && isVerif(i)) : [];
 // À l'arrivée sur l'écran : cette semaine s'il reste quelque chose à y prendre, sinon la préparation de la suivante
@@ -3268,9 +3268,12 @@ async function loadWeeks(){
 }
 function applyWeeks(wk){
   const {data, drafts}=copy(wk)||{};
-  const keep=state.drive ? curWeek()?.id : null;   // panier Drive ouvert : il reste sur sa semaine (retour depuis Leclerc)
+  // la semaine affichée reste : panier Drive (retour depuis Leclerc), onglet Semaine
+  const keep=state.drive || state.tab==='semaine' ? curWeek()?.id : null;
   state.weeks=(data||[]).map(cleanWeek).sort((a,b)=>b.week_start.localeCompare(a.week_start)); state.draft=cleanWeek((drafts&&drafts[0])||null);
-  const ki=keep ? state.weeks.findIndex(w=>w.id===keep) : -1;
+  // écran Courses : la semaine de son onglet (sinon il la recharge en affichant « Chargement… »)
+  const cw=!keep && state.tab==='courses' && state.cTab ? courseWeek() : null;
+  const ki=keep||cw ? state.weeks.findIndex(w=>w.id===(keep||cw.id)) : -1;
   if(ki>=0){ state.weekIdx=ki; return; }
   const today=todayIso();
   let idx=state.weeks.findIndex(w=>w.week_start<=today && addDays(w.week_start,6)>=today);
@@ -3304,7 +3307,7 @@ function weekKey(){ return {w:curWeek()?.id||null, vw:verifWeek()?.id||null, ids
 const copy=(x)=>JSON.parse(JSON.stringify(x??null));
 function applyWeekData(d){
   d=copy(d); const a=(x)=>Array.isArray(x)?x:[], r=d.r||[], rv=d.rv||[], rw=d.rw||[];
-  state.wkItems=d.ids.length?a(rw[0]):[]; state.wkLoaded=true;
+  state.wkItems=d.ids.length?a(rw[0]):[]; state.wkLoaded=true; state.itemsWk=d.w;
   state.backlog=a(r[0]); state.near=a(r[1]).map(cleanMeal); state.dishes=a(r[2]);
   state.feedback=a(r[3]).filter(f=>f.content?.type==='avis_repas');
   state.meals=d.w?a(r[4]).map(cleanMeal):[]; state.items=d.w?a(r[5]).filter(i=>!isVerif(i)):[];
@@ -3337,6 +3340,9 @@ function hydrate(c){
   state.member=copy(c.member);
   if(c.static) applyStatic(c.static);
   if(c.weeks) applyWeeks(c.weeks);
+  // la semaine des données gardées (celle qui était affichée) est reprise, sauf sur Courses où l'onglet décide
+  const i=c.wk && !(state.tab==='courses' && state.cTab) ? state.weeks.findIndex(w=>w.id===c.wk.w) : -1;
+  if(i>=0) state.weekIdx=i;
   const k=weekKey();   // une nouvelle semaine a pu commencer depuis : alors on attend le réseau
   if(c.wk && c.wk.w===k.w && c.wk.vw===k.vw && JSON.stringify(c.wk.ids)===JSON.stringify(k.ids)) applyWeekData(c.wk);
   if(c.prop){ let p=cleanProposal(c.prop.p||null); const w=cleanWeek(c.prop.w||null); if(!w || addDays(w.week_start,6)<todayIso()) p=null; state.proposal=p; state.propWeek=p?w:null; }

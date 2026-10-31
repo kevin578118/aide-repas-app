@@ -2,7 +2,7 @@
 // attendre le réseau : en magasin, l'écran restait vide le temps de les retélécharger. Une nouvelle version est
 // téléchargée en entier à l'installation de ce fichier (il change à chaque build) et sert à l'ouverture suivante.
 // Le reste (page de test…) : réseau d'abord, cache en secours.
-const CACHE = 'aide-repas-2026.10.31-1412';
+const CACHE = 'aide-repas-2026.10.31-1524';
 const SHELL = ["./", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png", "vendor/supabase-js-2.117.2.js", "fonts/instrument-sans-latin-wght-normal.woff2", "fonts/instrument-sans-latin-ext-wght-normal.woff2"];   // chemins relatifs au scope ; './' = la page de l'app
 self.addEventListener('install', e => {
   // cache: 'reload' : jamais la copie du cache HTTP (GitHub Pages la garde 10 min), qui mêlerait deux versions
