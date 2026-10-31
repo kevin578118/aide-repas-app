@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-UzRF0vpva5ysu6Pro/wZ2srzmZt0Q8+OF7gm84suQdY='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-EzAnq/x/8Uqow6zJFFsYlHV7pXtRYdGya4bo2sLfqJs='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -660,7 +660,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.31-1253';
+const APP_VERSION = '2026.10.31-1257';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -773,12 +773,18 @@ function localStorage_set(k,v){ try{ localStorage.setItem('ar_'+k, v); }catch{} 
 // L'iPhone ferme souvent l'app écran éteint (en magasin, entre deux articles) : on note à chaque sortie
 // l'écran et le défilement, pour la rouvrir au même endroit.
 function savedUi(){ try{ const u=JSON.parse(localStorage_get('ui')||'null'); return u && Date.now()-Number(u.at||0) < 30*60*1000 ? u : null; }catch{ return null; } }
-// Défilement à remettre : l'iPhone peut rouvrir l'app sans l'afficher, on réessaie jusqu'à ce qu'il tienne
-// (ou que la personne touche l'écran), sans enregistrer entre-temps le « tout en haut » provisoire.
-let restoreY=0;
-function applyY(){ if(!restoreY) return; window.scrollTo(0,restoreY); if(document.visibilityState==='visible' && Math.abs(window.scrollY-restoreY)<2) restoreY=0; }
+// Défilement à remettre : l'iPhone peut rouvrir l'app sans l'afficher, ou la remettre en haut tout seul.
+// On replace plusieurs fois jusqu'à ce que la personne touche l'écran, sans enregistrer entre-temps le
+// « tout en haut » provisoire. La position est notée en continu : l'iPhone ne prévient pas toujours avant de fermer.
+if('scrollRestoration' in history) history.scrollRestoration='manual';
+let restoreY=0, saveT=0;
+function applyY(){ if(restoreY) window.scrollTo(0,restoreY); }
+function replaceY(y){ restoreY=Math.max(0,Math.round(Number(y)||0)); [0,100,300,700,1500].forEach(t=>setTimeout(applyY,t)); }
 ['touchstart','wheel'].forEach(e=>window.addEventListener(e,()=>{ restoreY=0; },{passive:true}));
+window.addEventListener('scroll',()=>{ if(!saveT && document.visibilityState==='visible') saveT=setTimeout(()=>{ saveT=0; if(document.visibilityState==='visible') saveUi(); },300); },{passive:true});
 function saveUi(){ if(state.member) localStorage_set('ui', JSON.stringify({tab:state.tab, cTab:state.cTab, drive:state.drive, y:restoreY||Math.round(window.scrollY), at:Date.now()})); }
+// Retour à l'écran sans fermeture : si l'iPhone a remis en haut, on revient où l'on était en partant.
+function backToSaved(){ const u=savedUi(); if(u && state.member && u.tab===state.tab && !!u.drive===!!state.drive) replaceY(u.y); }
 function initialTab(){
   const u=savedUi(), t=u?u.tab:localStorage_get('tab'), at=u?u.at:Number(localStorage_get('tab_at')||0);
   return (['accueil','semaine','courses','inventaire'].includes(t) && Date.now()-at < 30*60*1000) ? t : 'accueil';
@@ -787,7 +793,7 @@ function restoreUi(){
   const u=savedUi(); if(!u || u.tab!==state.tab) return;
   if(['now','next'].includes(u.cTab)) state.cTab=u.cTab;
   if(u.drive===true && state.tab==='courses') state.drive=true;
-  render(); restoreY=Math.max(0,Number(u.y)||0); applyY(); setTimeout(applyY,400);
+  render(); replaceY(u.y);
 }
 function setTab(t){ restoreY=0; if(t!=='reglages') state.prevTab=t; if(t==='courses' && state.tab!=='courses') state.cTab=null; state.tab=t; state.findOpen=false; state.q=''; localStorage_set('tab',t); localStorage_set('tab_at',String(Date.now())); render(); window.scrollTo(0,0); }
 
@@ -3295,8 +3301,8 @@ async function boot(){
   const {data:{session}}=await sb.auth.getSession();
   await onSession(session);
   sb.auth.onAuthStateChange((_e,s)=>{ if((s&&!state.session)||(!s&&state.session)) onSession(s); });
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveUi(); else { applyY(); if(state.session&&state.member) { loadStatic().then(loadWeeks).then(loadWeekData).then(applyY); loadProposal(); } } });
-  window.addEventListener('pagehide', saveUi);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveUi(); else { backToSaved(); if(state.session&&state.member) { loadStatic().then(loadWeeks).then(loadWeekData).then(applyY); loadProposal(); } } });
+  window.addEventListener('pagehide', saveUi); window.addEventListener('pageshow', e=>{ if(e.persisted) backToSaved(); });
   // le « prochain repas » change avec l'heure : on rafraîchit l'accueil chaque minute
   setInterval(()=>{ if(state.tab==='accueil' && state.member && !state.wiz && !state.rev && !$('#sheet').classList.contains('on')) render(); }, 60000);
 }
