@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-cUsUlcil4Zv7CIehcOroCdwdCiPfT6QFXnSW4Q3KhMY='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-+zecFZfOnXNqRdK+T0W7Gcr7zUhW6Kpig8DfhU56baw='; connect-src https://ekdimvhbpdbkjpqzdcfb.supabase.co wss://ekdimvhbpdbkjpqzdcfb.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Aide repas</title>
@@ -660,7 +660,7 @@ const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://ekdimvhbpdbkjpqzdcfb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ccBFY8KiARZj1qJRSjSmfA_fumLGvwL';
-const APP_VERSION = '2026.10.31-1300';
+const APP_VERSION = '2026.10.31-1320';
 const VAPID_PUBLIC_KEY = 'BLvdbPjf4fGtqpdm8KanDQlr6FZQI-SoPWd85plIgwLyx6-_gJ5054rSws08OqEMtGpV3FIyucQfWbgz1x0kv5M';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -756,14 +756,17 @@ const ICONS = {
 };
 const ic = (n, c='') => `<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="true">${has(ICONS,n)?ICONS[n]:''}</svg>`;
 
+// L'écran où l'on était à la dernière sortie (moins de 30 min) : fixé dès le lancement, pour que le premier
+// affichage de la liste soit déjà le bon (voir savedUi plus bas).
+const bootUi=(()=>{ const u=savedUi(); return u && u.tab===initialTab() ? u : null; })();
 const state = {
   session:null, member:null, tab: initialTab(), prevTab:'accueil',
   weeks:[], weekIdx:0, meals:[], items:[], backlog:[], household:[], placard:[], members:[],
   near:[], dishes:[], feedback:[], swapMarks:{}, push:null, homeAlt:null,
   filter: localStorage_get('filter') || 'drive', view: localStorage_get('view') || 'rayon', q:'', findOpen:false,
-  cTab:null, wkItems:[], showOrder:false, justAdded:null, invQ:'',
+  cTab: ['now','next'].includes(bootUi?.cTab) ? bootUi.cTab : null, wkItems:[], showOrder:false, justAdded:null, invQ:'',
   email: localStorage_get('email') || '', err:'', busy:false,
-  draft:null, wiz:null, drive:false, settings:{}, driveDone:false,
+  draft:null, wiz:null, drive: bootUi?.tab==='courses' && bootUi.drive===true, settings:{}, driveDone:false,
   proposal:null, propWeek:null, propPrev:null, rev:null, dishFull:[], avisAll:[],
   verif:[], verifMeals:[], verifOpen:false, oubliOpen:false
 };
@@ -777,7 +780,7 @@ function savedUi(){ try{ const u=JSON.parse(localStorage_get('ui')||'null'); ret
 // On replace plusieurs fois jusqu'à ce que la personne touche l'écran, sans enregistrer entre-temps le
 // « tout en haut » provisoire. La position est notée en continu : l'iPhone ne prévient pas toujours avant de fermer.
 if('scrollRestoration' in history) history.scrollRestoration='manual';
-let restoreY=0, saveT=0;
+let restoreY=bootUi ? Math.max(0,Math.round(Number(bootUi.y)||0)) : 0, saveT=0;   // render() y replace la liste dès son premier affichage
 function applyY(){ if(restoreY) window.scrollTo(0,restoreY); }
 function replaceY(y){ restoreY=Math.max(0,Math.round(Number(y)||0)); applyY(); [100,300,700,1500].forEach(t=>setTimeout(applyY,t)); }
 ['touchstart','wheel'].forEach(e=>window.addEventListener(e,()=>{ restoreY=0; },{passive:true}));
@@ -789,12 +792,7 @@ function initialTab(){
   const u=savedUi(), t=u?u.tab:localStorage_get('tab'), at=u?u.at:Number(localStorage_get('tab_at')||0);
   return (['accueil','semaine','courses','inventaire'].includes(t) && Date.now()-at < 30*60*1000) ? t : 'accueil';
 }
-function restoreUi(){
-  const u=savedUi(); if(!u || u.tab!==state.tab) return;
-  if(['now','next'].includes(u.cTab)) state.cTab=u.cTab;
-  if(u.drive===true && state.tab==='courses') state.drive=true;
-  render(); replaceY(u.y);
-}
+function restoreUi(){ if(restoreY) replaceY(restoreY); }   // fin du démarrage : quelques essais de plus
 function setTab(t){ restoreY=0; if(t!=='reglages') state.prevTab=t; if(t==='courses' && state.tab!=='courses') state.cTab=null; state.tab=t; state.findOpen=false; state.q=''; localStorage_set('tab',t); localStorage_set('tab_at',String(Date.now())); render(); window.scrollTo(0,0); }
 
 const $ = (s)=>document.querySelector(s);
@@ -1022,6 +1020,7 @@ function render(){
   const courses = nav && state.tab==='courses';   // fond gris, cartes blanches, barre d'ajout
   document.documentElement.classList.toggle('grey', courses); document.body.classList.toggle('withadd', courses);
   if(keep){ const el=document.getElementById(keep.id); if(el && el!==document.activeElement){ el.value=keep.v; el.focus(); try{ el.setSelectionRange(keep.s,keep.e); }catch{} } }
+  if(state.wkLoaded) applyY();   // défilement à remettre (retour dans l'app) : dans la même image que l'écran
 }
 function tabBtn(id,icon,label,badge){
   return `<button data-tab="${id}" class="${state.tab===id?'on':''}" ${state.tab===id?'aria-current="page"':''}><span class="ico">${ic(icon)}${badge?`<span class="badge">${badge}</span>`:''}</span>${label}</button>`;
